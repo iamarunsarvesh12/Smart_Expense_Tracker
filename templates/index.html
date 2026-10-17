@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Smart Home Expense Tracker - Modern household budget management with AI Voice Assistant, 7-category budget planner, savings tracker, automated email reports, and spending analytics.">
-    <title>Smart Home Expense Tracker | Budget & Savings Planner</title>
+    <meta name="description" content="Smart Home Expense Tracker - High-density editorial personal finance dashboard with AI Voice Assistant, 7-category budget planner, savings tracker, and automated financial dispatches.">
+    <title>Smart Home Expense Tracker | Budget & Savings Engine</title>
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,16 +12,17 @@
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['Geist', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+                        mono: ['Geist Mono', 'SFMono-Regular', 'Menlo', 'monospace']
+                    },
                     colors: {
                         brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            200: '#c7d2fe',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            800: '#3730a3',
-                            900: '#312e81',
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            500: '#475569',
+                            600: '#334155',
+                            900: '#0f172a'
                         }
                     }
                 }
@@ -35,81 +36,83 @@
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Custom Stylesheet -->
+    <!-- Custom Editorial Stylesheet -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white relative">
+<body class="bg-[#FBFBFA] text-[#121316] min-h-screen flex flex-col antialiased selection:bg-neutral-900 selection:text-white">
 
-    <!-- Top Navigation Header -->
-    <header class="border-b border-slate-200 bg-white/95 backdrop-blur sticky top-0 z-40 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <!-- Top Navigation Header (Linear / Apple Utilitarian Style) -->
+    <header class="border-b border-black/[0.07] bg-white/95 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
             <!-- App Identity -->
             <div class="flex items-center space-x-3">
-                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
-                    <i class="fa-solid fa-house-laptop text-lg"></i>
+                <div class="h-8 w-8 rounded-lg bg-neutral-900 text-white flex items-center justify-center font-bold text-xs shadow-xs tracking-tight">
+                    <i class="fa-solid fa-receipt text-xs"></i>
                 </div>
-                <div>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-lg font-bold text-slate-900 tracking-tight">Smart Expense</span>
-                        <span id="current-month-badge" class="text-xs px-2.5 py-0.5 font-medium bg-brand-50 text-brand-700 rounded-full border border-brand-200">
-                            Loading...
-                        </span>
-                    </div>
-                    <p class="text-[11px] text-slate-500 hidden sm:block">AI Voice & Budget Savings Engine</p>
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm font-bold tracking-tight text-neutral-900">Smart Expense</span>
+                    <span class="text-neutral-300">/</span>
+                    <span id="current-month-badge" class="text-xs px-2 py-0.5 font-medium bg-neutral-100 text-neutral-700 rounded-md border border-black/[0.06] tabular-nums">
+                        Loading...
+                    </span>
+                    <span class="hidden sm:inline-flex items-center space-x-1 text-[11px] font-medium text-emerald-600 ml-1">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>Live</span>
+                    </span>
                 </div>
             </div>
 
-            <!-- Action Controls -->
-            <div class="flex items-center space-x-2 sm:space-x-2.5">
-                <!-- Monthly Budget Planner Button -->
-                <button id="btn-open-budget-modal" type="button" class="inline-flex items-center space-x-1.5 px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 shadow-sm transition-all" title="Configure Monthly Income & Category Budgets">
-                    <i class="fa-solid fa-sliders text-brand-600"></i>
+            <!-- Header Action Controls -->
+            <div class="flex items-center space-x-1.5 sm:space-x-2">
+                <!-- Budget Planner Button -->
+                <button id="btn-open-budget-modal" type="button" class="inline-flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg text-neutral-700 bg-white hover:bg-neutral-50 border border-black/[0.09] shadow-2xs transition-all" title="Configure Monthly Budget Allocations">
+                    <i class="fa-solid fa-sliders text-neutral-500 text-[11px]"></i>
                     <span class="hidden md:inline">Budget</span>
                 </button>
 
-                <!-- Voice Assistant Trigger Button (Header) -->
-                <button id="btn-voice-header" type="button" class="relative group inline-flex items-center space-x-2 px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 shadow-sm transition-all" title="Start voice expense entry">
-                    <span id="voice-header-pulse" class="relative flex h-2.5 w-2.5">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-600"></span>
+                <!-- Voice Input Button (Header Trigger) -->
+                <button id="btn-voice-header" type="button" class="inline-flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg text-neutral-700 bg-white hover:bg-neutral-50 border border-black/[0.09] shadow-2xs transition-all" title="Capture Voice Expense">
+                    <span id="voice-header-pulse" class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
                     </span>
-                    <i class="fa-solid fa-microphone text-indigo-600"></i>
+                    <i class="fa-solid fa-microphone text-neutral-600 text-[11px]"></i>
                     <span class="hidden md:inline">Voice</span>
                 </button>
 
-                <!-- Email Monthly Report Button -->
-                <button id="btn-email-report" type="button" class="inline-flex items-center space-x-1.5 px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 shadow-sm transition-all" title="Email Monthly Report to sarveshsantosh2007s@gmail.com">
-                    <i class="fa-solid fa-paper-plane text-indigo-600"></i>
+                <!-- Email Report Button -->
+                <button id="btn-email-report" type="button" class="inline-flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg text-neutral-700 bg-white hover:bg-neutral-50 border border-black/[0.09] shadow-2xs transition-all" title="Dispatch Monthly Report to sarveshsantosh2007s@gmail.com">
+                    <i class="fa-regular fa-paper-plane text-neutral-500 text-[11px]"></i>
                     <span class="hidden lg:inline">Email Report</span>
                 </button>
 
-                <!-- Reset Database Danger Button -->
-                <button id="btn-open-reset-modal" type="button" class="inline-flex items-center space-x-1.5 px-2.5 sm:px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 shadow-sm transition-all" title="Reset Database (Password Protected)">
-                    <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
-                    <span class="hidden xl:inline">Reset DB</span>
+                <!-- Reset DB Danger Button -->
+                <button id="btn-open-reset-modal" type="button" class="inline-flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg text-rose-600 hover:text-rose-700 bg-white hover:bg-rose-50/50 border border-black/[0.09] shadow-2xs transition-all" title="Reset Database (Admin Protected)">
+                    <i class="fa-solid fa-trash-can text-[11px]"></i>
+                    <span class="hidden xl:inline">Reset</span>
                 </button>
 
                 <!-- Export Dropdown -->
                 <div class="relative inline-block text-left" id="export-dropdown-wrapper">
-                    <button id="btn-export-menu" type="button" class="inline-flex items-center space-x-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-xl text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 shadow-sm transition-all">
-                        <i class="fa-solid fa-file-export text-slate-500"></i>
+                    <button id="btn-export-menu" type="button" class="inline-flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg text-neutral-700 bg-white hover:bg-neutral-50 border border-black/[0.09] shadow-2xs transition-all">
+                        <i class="fa-solid fa-arrow-down-to-line text-neutral-500 text-[11px]"></i>
                         <span class="hidden sm:inline">Export</span>
-                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 ml-1"></i>
+                        <i class="fa-solid fa-chevron-down text-[9px] text-neutral-400 ml-0.5"></i>
                     </button>
                     <!-- Dropdown Menu -->
-                    <div id="export-menu" class="hidden absolute right-0 mt-2 w-44 rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-slate-100 z-50">
+                    <div id="export-menu" class="hidden absolute right-0 mt-1.5 w-40 rounded-xl bg-white shadow-popover border border-black/[0.08] divide-y divide-black/[0.05] z-50">
                         <div class="py-1">
-                            <a href="/api/export" download class="group flex items-center px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-brand-600">
-                                <i class="fa-solid fa-file-csv mr-2 text-emerald-600"></i>
-                                Export CSV
+                            <a href="/api/export" download class="group flex items-center px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors">
+                                <i class="fa-solid fa-file-csv mr-2 text-neutral-400 text-xs"></i>
+                                Download CSV
                             </a>
                         </div>
                     </div>
                 </div>
 
-                <!-- Add Expense Button (Manual Modal) -->
-                <button id="btn-open-add-modal" type="button" class="inline-flex items-center space-x-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-600/25 transition-all">
-                    <i class="fa-solid fa-plus"></i>
+                <!-- Add Expense Button (Primary High-Contrast) -->
+                <button id="btn-open-add-modal" type="button" class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg text-white bg-neutral-900 hover:bg-neutral-800 shadow-sm transition-all">
+                    <i class="fa-solid fa-plus text-[10px]"></i>
                     <span>Add Expense</span>
                 </button>
             </div>
@@ -117,128 +120,127 @@
     </header>
 
     <!-- Main Container -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
 
-        <!-- Top Stat Cards (4 Cards: Spend, Income/Budget, Net Savings, Daily Burn Rate) -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-            <!-- Card 1: Total Spent This Month -->
-            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">This Month's Spend</span>
-                    <div class="h-8 w-8 rounded-xl bg-indigo-50 text-brand-600 flex items-center justify-center text-sm">
-                        <i class="fa-solid fa-wallet"></i>
-                    </div>
+        <!-- Top Financial Summary Ribbon (Dense Horizontal Bar, Zero Clichés) -->
+        <section class="editorial-surface rounded-xl overflow-hidden divide-y sm:divide-y-0 sm:divide-x divide-neutral-200/80 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            
+            <!-- Metric 1: Monthly Income -->
+            <div class="p-4 sm:p-5 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs font-medium text-neutral-500 mb-1">
+                    <span class="uppercase tracking-wider text-[10px] font-semibold text-neutral-400">Monthly Income</span>
+                    <button type="button" class="text-[11px] font-semibold text-neutral-500 hover:text-neutral-900 underline transition-colors" onclick="document.getElementById('btn-open-budget-modal').click()">
+                        Edit
+                    </button>
                 </div>
-                <div class="flex items-baseline space-x-2">
-                    <span id="stat-month-total" class="text-2xl font-extrabold text-slate-900 tracking-tight">₹0.00</span>
+                <div class="text-2xl font-bold tracking-tight text-neutral-950 tabular-nums">
+                    <span id="stat-monthly-income">₹0.00</span>
                 </div>
-                <div class="mt-2 text-xs text-slate-500 flex items-center space-x-1">
-                    <i class="fa-regular fa-calendar-check text-slate-400"></i>
-                    <span id="stat-month-transactions">0 transactions</span>
+                <div class="text-xs text-neutral-400 mt-2 flex items-center justify-between">
+                    <span>Budget Allocated</span>
+                    <strong id="stat-budget-allocated" class="text-neutral-700 font-semibold tabular-nums">₹0.00</strong>
                 </div>
             </div>
 
-            <!-- Card 2: Monthly Income & Budget Allocation -->
-            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Monthly Income</span>
-                    <div class="h-8 w-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-sm">
-                        <i class="fa-solid fa-money-bill-wave"></i>
-                    </div>
+            <!-- Metric 2: Total Spent -->
+            <div class="p-4 sm:p-5 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs font-medium text-neutral-500 mb-1">
+                    <span class="uppercase tracking-wider text-[10px] font-semibold text-neutral-400">Total Spent</span>
+                    <span id="stat-month-transactions" class="text-[11px] text-neutral-400 font-medium tabular-nums">0 transactions</span>
                 </div>
-                <div class="flex items-baseline space-x-2">
-                    <span id="stat-monthly-income" class="text-2xl font-extrabold text-slate-900 tracking-tight">₹0.00</span>
+                <div class="text-2xl font-bold tracking-tight text-neutral-950 tabular-nums">
+                    <span id="stat-month-total">₹0.00</span>
                 </div>
-                <div class="mt-2 text-xs text-slate-500 flex items-center justify-between">
-                    <span>Allocated: <strong id="stat-budget-allocated" class="text-slate-700 font-semibold">₹0.00</strong></span>
-                    <button type="button" class="text-brand-600 hover:text-brand-700 underline text-[11px]" onclick="document.getElementById('btn-open-budget-modal').click()">Edit</button>
+                <div class="text-xs text-neutral-400 mt-2 flex items-center justify-between">
+                    <span>Monthly Spend Rate</span>
+                    <span class="text-[11px] text-neutral-500 font-medium">This month</span>
                 </div>
             </div>
 
-            <!-- Card 3: Net Savings & Savings Meter -->
-            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Net Savings</span>
-                    <span id="stat-savings-rate-badge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+            <!-- Metric 3: Net Savings & Linear Meter -->
+            <div class="p-4 sm:p-5 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs font-medium text-neutral-500 mb-1">
+                    <span class="uppercase tracking-wider text-[10px] font-semibold text-neutral-400">Net Savings</span>
+                    <span id="stat-savings-rate-badge" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80">
                         0% Saved
                     </span>
                 </div>
-                <div class="flex items-baseline space-x-2">
-                    <span id="stat-net-savings" class="text-2xl font-extrabold text-emerald-600 tracking-tight">₹0.00</span>
+                <div class="text-2xl font-bold tracking-tight text-emerald-600 tabular-nums">
+                    <span id="stat-net-savings">₹0.00</span>
                 </div>
-                <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2.5 overflow-hidden">
-                    <div id="stat-savings-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                <div class="mt-2.5">
+                    <div class="w-full bg-neutral-100 h-1.5 rounded-full overflow-hidden">
+                        <div id="stat-savings-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
                 </div>
-                <div class="mt-1 text-[11px] text-slate-400">Income minus total spent</div>
             </div>
 
-            <!-- Card 4: Daily Burn Rate vs Target -->
-            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Today's Burn</span>
-                    <span id="stat-daily-status-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+            <!-- Metric 4: Daily Burn Rate vs Target -->
+            <div class="p-4 sm:p-5 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs font-medium text-neutral-500 mb-1">
+                    <span class="uppercase tracking-wider text-[10px] font-semibold text-neutral-400">Today's Burn</span>
+                    <span id="stat-daily-status-badge" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600 border border-neutral-200">
                         Target Active
                     </span>
                 </div>
-                <div class="flex items-baseline space-x-2">
-                    <span id="stat-today-total" class="text-2xl font-extrabold text-slate-900 tracking-tight">₹0.00</span>
-                    <span class="text-xs text-slate-400">spent</span>
+                <div class="text-2xl font-bold tracking-tight text-neutral-950 tabular-nums">
+                    <span id="stat-today-total">₹0.00</span>
+                    <span class="text-xs font-normal text-neutral-400 ml-1">spent</span>
                 </div>
-                <div class="mt-2 text-xs text-slate-500 flex items-center space-x-1">
-                    <i class="fa-solid fa-bullseye text-slate-400"></i>
-                    <span>Target: <strong id="stat-daily-target" class="text-slate-700">₹0 / day</strong></span>
+                <div class="text-xs text-neutral-400 mt-2 flex items-center justify-between">
+                    <span>Daily Target</span>
+                    <strong id="stat-daily-target" class="text-neutral-700 font-semibold tabular-nums">₹0 / day</strong>
                 </div>
             </div>
+
         </section>
 
-        <!-- Category Highlights & Remaining Balances (7 Granular Buckets) -->
-        <section>
-            <div class="flex items-center justify-between mb-3">
+        <!-- Category Budgets & Remaining Balances (Dense 7-Bucket Strip) -->
+        <section class="space-y-2.5">
+            <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                    <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-2">
-                        <i class="fa-solid fa-layer-group text-brand-600"></i>
-                        <span>Category Budgets & Remaining Balance</span>
-                    </h2>
-                    <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">7 Categories</span>
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-neutral-500">Category Budgets</h2>
+                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600 font-semibold border border-neutral-200/80">7 Categories</span>
                 </div>
-                <span class="text-xs text-slate-400 hidden sm:inline">Click any card to filter expenses</span>
+                <span class="text-[11px] text-neutral-400">Click any card to filter ledger</span>
             </div>
 
-            <!-- Grid of 7 Categories -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4" id="category-cards-container">
-                <!-- Dynamically populated by app.js -->
+            <!-- Category Grid Container (Populated Dynamically) -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 sm:gap-3" id="category-cards-container">
+                <!-- Populated by app.js -->
             </div>
         </section>
 
-        <!-- Main 2-Column Section: Calendar & Details -->
-        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Core Split-View Workspace -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
 
-            <!-- Left Column: Interactive Calendar + Analytics (7 of 12 cols) -->
-            <div class="lg:col-span-7 space-y-6">
+            <!-- Left Panel: Calendar, Docked Voice, and Spending Analytics (7 of 12 cols) -->
+            <div class="lg:col-span-7 space-y-5">
 
-                <!-- Interactive Calendar Card -->
-                <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
+                <!-- Interactive Mini-Calendar -->
+                <div class="editorial-surface rounded-xl p-4 sm:p-5">
+                    <div class="flex items-center justify-between mb-3.5 pb-2.5 border-b border-black/[0.05]">
                         <div class="flex items-center space-x-2">
-                            <i class="fa-regular fa-calendar-days text-brand-600 text-lg"></i>
-                            <h2 id="calendar-title" class="text-base sm:text-lg font-extrabold text-slate-900">
+                            <i class="fa-regular fa-calendar text-neutral-500 text-sm"></i>
+                            <h3 id="calendar-title" class="text-sm font-bold text-neutral-900 tracking-tight">
                                 October 2026
-                            </h2>
+                            </h3>
                         </div>
-                        <div class="flex items-center space-x-1 sm:space-x-2">
-                            <button id="btn-prev-month" type="button" class="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all" title="Previous Month">
-                                <i class="fa-solid fa-chevron-left text-xs"></i>
+                        <div class="flex items-center space-x-1">
+                            <button id="btn-prev-month" type="button" class="p-1.5 rounded-md text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-colors" title="Previous Month">
+                                <i class="fa-solid fa-chevron-left text-[11px]"></i>
                             </button>
-                            <button id="btn-current-month" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
+                            <button id="btn-current-month" type="button" class="px-2 py-1 text-xs font-semibold rounded-md text-neutral-700 bg-neutral-100 hover:bg-neutral-200 transition-colors">
                                 Today
                             </button>
-                            <button id="btn-next-month" type="button" class="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all" title="Next Month">
-                                <i class="fa-solid fa-chevron-right text-xs"></i>
+                            <button id="btn-next-month" type="button" class="p-1.5 rounded-md text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-colors" title="Next Month">
+                                <i class="fa-solid fa-chevron-right text-[11px]"></i>
                             </button>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-7 text-center text-[11px] font-bold text-slate-400 uppercase py-2 border-b border-slate-100 mb-2">
+                    <!-- Days Header -->
+                    <div class="grid grid-cols-7 text-center text-[10px] font-bold text-neutral-400 uppercase py-1 border-b border-black/[0.04] mb-1.5">
                         <span>Sun</span>
                         <span>Mon</span>
                         <span>Tue</span>
@@ -248,60 +250,79 @@
                         <span>Sat</span>
                     </div>
 
-                    <div id="calendar-grid" class="grid grid-cols-7 gap-1 sm:gap-1.5">
+                    <!-- Calendar Tile Grid -->
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-1">
                         <!-- Populated by JavaScript -->
                     </div>
 
-                    <div class="flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-slate-100 mt-4">
+                    <div class="flex items-center justify-between text-[11px] text-neutral-400 pt-2.5 border-t border-black/[0.04] mt-3">
                         <div class="flex items-center space-x-3">
                             <span class="inline-flex items-center space-x-1">
-                                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                                 <span>Has Expense</span>
                             </span>
                             <span class="inline-flex items-center space-x-1">
-                                <span class="h-2 w-2 rounded-full bg-brand-600"></span>
+                                <span class="h-1.5 w-1.5 rounded-full bg-neutral-900"></span>
                                 <span>Selected</span>
                             </span>
                         </div>
-                        <span>Click any date to view items</span>
+                        <span>Click date to view details</span>
                     </div>
                 </div>
 
-                <!-- Spending Analytics Section (2 Enhanced Charts) -->
-                <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm space-y-6">
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <div class="flex items-center space-x-2">
-                            <i class="fa-solid fa-chart-line text-brand-600"></i>
-                            <h2 class="text-base font-bold text-slate-900">Spending Trends & Analytics</h2>
+                <!-- Docked Voice Entry Action Pill -->
+                <div class="editorial-surface rounded-xl p-3 sm:p-3.5 flex items-center justify-between bg-white hover:border-black/20 transition-all cursor-pointer" onclick="document.getElementById('btn-voice-header').click()">
+                    <div class="flex items-center space-x-3">
+                        <div class="h-8 w-8 rounded-lg bg-neutral-100 text-neutral-700 flex items-center justify-center text-xs shrink-0">
+                            <i class="fa-solid fa-microphone"></i>
                         </div>
-                        <span class="text-xs text-slate-400">Live Visual Insights</span>
+                        <div>
+                            <div class="text-xs font-bold text-neutral-900 flex items-center space-x-2">
+                                <span>Smart Voice Capture</span>
+                                <span class="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">English & Tanglish</span>
+                            </div>
+                            <p class="text-[11px] text-neutral-500 mt-0.5">
+                                Tap to speak (e.g., "Petrol 200", "Paal 30", or "EB bill 1450")
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-1 text-xs font-semibold text-neutral-700 bg-neutral-50 px-2.5 py-1 rounded-md border border-black/[0.06]">
+                        <span>Speak</span>
+                        <i class="fa-solid fa-arrow-right text-[10px] ml-1 text-neutral-400"></i>
+                    </div>
+                </div>
+
+                <!-- Spending Analytics (Dual Visualizations) -->
+                <div class="editorial-surface rounded-xl p-4 sm:p-5 space-y-5">
+                    <div class="flex items-center justify-between border-b border-black/[0.05] pb-2.5">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-chart-simple text-neutral-500 text-xs"></i>
+                            <h3 class="text-xs font-bold text-neutral-900 uppercase tracking-wider">Analytics & Burn Rate</h3>
+                        </div>
+                        <span class="text-[11px] text-neutral-400">Live Breakdown</span>
                     </div>
 
-                    <!-- Chart 1: Daily Spending Trends vs Recommended Daily Burn Rate -->
+                    <!-- Chart 1: Daily Spend vs Recommended Burn Rate -->
                     <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                Daily Spend vs. Recommended Burn Rate
-                            </h3>
-                            <span class="text-[11px] text-slate-500">
-                                <span class="inline-block w-2.5 h-2.5 bg-indigo-500 rounded-sm mr-1"></span> Daily Spend
-                                <span class="inline-block w-3 border-b-2 border-rose-500 border-dashed mx-1"></span> Target
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[11px] font-semibold text-neutral-600">Daily Spend vs. Daily Target</span>
+                            <span class="text-[10px] text-neutral-400">
+                                <span class="inline-block w-2 h-2 bg-neutral-800 rounded-2xs mr-1"></span> Daily
+                                <span class="inline-block w-2.5 border-b border-rose-500 border-dashed mx-1"></span> Burn Target
                             </span>
                         </div>
-                        <div class="relative w-full h-[220px]">
+                        <div class="relative w-full h-[180px]">
                             <canvas id="chart-daily-bars"></canvas>
                         </div>
                     </div>
 
-                    <!-- Chart 2: Category Breakdown Sorted by Highest Spend -->
-                    <div class="pt-4 border-t border-slate-100">
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                                Category Spend Ranking (Click Bar to Filter)
-                            </h3>
-                            <span class="text-[11px] text-slate-400">Sorted Highest to Lowest</span>
+                    <!-- Chart 2: Category Ranking -->
+                    <div class="pt-4 border-t border-black/[0.05]">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[11px] font-semibold text-neutral-600">Category Spend Ranking</span>
+                            <span class="text-[10px] text-neutral-400">Click bar to filter</span>
                         </div>
-                        <div class="relative w-full h-[220px]">
+                        <div class="relative w-full h-[180px]">
                             <canvas id="chart-category-ranking"></canvas>
                         </div>
                     </div>
@@ -309,55 +330,59 @@
 
             </div>
 
-            <!-- Right Column: Selected Date / Category Expenses Panel (5 of 12 cols) -->
+            <!-- Right Panel: Activity Ledger & Filtered Expenses (5 of 12 cols) -->
             <div class="lg:col-span-5 space-y-4">
-                <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm sticky top-24">
+                <div class="editorial-surface rounded-xl p-4 sm:p-5 sticky top-20">
                     
-                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <!-- Panel Header -->
+                    <div class="flex items-center justify-between pb-3 border-b border-black/[0.06]">
                         <div>
                             <div class="flex items-center space-x-2">
-                                <span class="text-xs font-bold text-brand-600 uppercase tracking-wider block" id="panel-badge-title">
+                                <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block" id="panel-badge-title">
                                     Selected Date
                                 </span>
-                                <span id="category-filter-badge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                                <span id="category-filter-badge" class="hidden text-[10px] font-semibold px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-800 border border-black/[0.08]">
                                     Category: <span id="category-filter-name"></span>
                                 </span>
                             </div>
-                            <h2 id="selected-date-title" class="text-base sm:text-lg font-extrabold text-slate-900">
+                            <h2 id="selected-date-title" class="text-sm sm:text-base font-bold text-neutral-900 mt-0.5 tracking-tight">
                                 Saturday, 17 Oct 2026
                             </h2>
                         </div>
                         <div class="flex items-center space-x-1.5">
-                            <button id="btn-clear-category-filter" type="button" class="hidden text-xs text-rose-600 hover:text-rose-700 px-2 py-1 rounded hover:bg-rose-50 font-medium">
-                                Clear Filter
+                            <button id="btn-clear-category-filter" type="button" class="hidden text-xs text-rose-600 hover:text-rose-700 px-2 py-1 rounded font-medium">
+                                Clear
                             </button>
-                            <button id="btn-add-for-selected-date" type="button" class="inline-flex items-center space-x-1 px-2.5 py-1.5 text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-lg border border-brand-200 transition-all">
+                            <button id="btn-add-for-selected-date" type="button" class="inline-flex items-center space-x-1 px-2.5 py-1 text-xs font-semibold text-neutral-800 bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors">
                                 <i class="fa-solid fa-plus text-[10px]"></i>
                                 <span>Add</span>
                             </button>
                         </div>
                     </div>
 
-                    <div class="bg-slate-50 rounded-xl p-3 my-3 flex items-center justify-between border border-slate-100">
-                        <div class="text-xs text-slate-500">
-                            <span>Total Filtered:</span>
-                            <span id="selected-date-count" class="font-semibold text-slate-700 ml-1">(0 items)</span>
+                    <!-- Filter Summary Pill -->
+                    <div class="bg-neutral-50 rounded-lg p-3 my-3 flex items-center justify-between border border-black/[0.04]">
+                        <div class="text-xs text-neutral-500">
+                            <span>Filtered Total</span>
+                            <span id="selected-date-count" class="font-medium text-neutral-700 ml-1">(0 items)</span>
                         </div>
-                        <div id="selected-date-total" class="text-xl font-black text-slate-900">
+                        <div id="selected-date-total" class="text-lg font-bold text-neutral-900 tabular-nums">
                             ₹0.00
                         </div>
                     </div>
 
-                    <div id="daily-expenses-list" class="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
+                    <!-- Expenses List Container -->
+                    <div id="daily-expenses-list" class="space-y-2 max-h-[460px] overflow-y-auto pr-1">
                         <!-- Populated by JavaScript -->
                     </div>
 
+                    <!-- Empty State -->
                     <div id="daily-empty-state" class="hidden text-center py-10 px-4">
-                        <div class="h-12 w-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
-                            <i class="fa-solid fa-receipt text-xl"></i>
+                        <div class="h-10 w-10 rounded-full bg-neutral-100 text-neutral-400 flex items-center justify-center mx-auto mb-2 text-sm">
+                            <i class="fa-solid fa-receipt"></i>
                         </div>
-                        <p class="text-sm font-semibold text-slate-600">No expenses recorded</p>
-                        <p class="text-xs text-slate-400 mt-1">Tap + Add Expense or use Voice to log an entry.</p>
+                        <p class="text-xs font-semibold text-neutral-700">No expenses on this date</p>
+                        <p class="text-[11px] text-neutral-400 mt-0.5">Use + Add Expense or Voice to log an entry.</p>
                     </div>
                 </div>
             </div>
@@ -366,37 +391,39 @@
 
     </main>
 
-    <!-- Floating Action Button for Voice Entry -->
-    <div class="fixed bottom-6 right-6 z-40">
-        <button id="btn-voice-fab" type="button" class="group relative h-14 w-14 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-500 text-white shadow-xl shadow-brand-500/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all focus:outline-none" title="Quick voice expense entry">
-            <span id="voice-fab-pulse" class="hidden absolute inset-0 rounded-full bg-indigo-400 animate-ping opacity-60"></span>
-            <i class="fa-solid fa-microphone text-xl group-hover:scale-110 transition-transform"></i>
+    <!-- Floating Action Pill (Bottom-Right, Minimalist Apple Dock Style) -->
+    <div class="fixed bottom-5 right-5 z-40">
+        <button id="btn-voice-fab" type="button" class="group relative h-12 w-12 rounded-full bg-neutral-900 text-white shadow-popover flex items-center justify-center hover:bg-neutral-800 transition-all focus:outline-none" title="Quick Voice Expense Capture">
+            <span id="voice-fab-pulse" class="hidden absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-50"></span>
+            <i class="fa-solid fa-microphone text-sm"></i>
         </button>
     </div>
 
-    <!-- Voice Listening Active Overlay Banner -->
-    <div id="voice-listening-overlay" class="hidden fixed inset-x-0 bottom-0 bg-slate-950/95 backdrop-blur-md text-white border-t border-indigo-500/30 p-4 z-50 shadow-2xl transition-all">
-        <div class="max-w-3xl mx-auto flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <div class="relative flex items-center justify-center h-10 w-10 rounded-full bg-rose-500/20 text-rose-500">
-                    <span class="animate-ping absolute h-8 w-8 rounded-full bg-rose-500 opacity-75"></span>
-                    <i class="fa-solid fa-microphone-lines text-lg"></i>
+    <!-- Voice Listening Floating Active Pill (Linear-Style Pill with Audio Waves) -->
+    <div id="voice-listening-overlay" class="hidden fixed bottom-6 inset-x-0 mx-auto max-w-lg w-[90%] bg-neutral-950/95 backdrop-blur-md text-white rounded-2xl p-4 shadow-modal border border-white/10 z-50 modal-enter">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <!-- Animated Waveform Bars -->
+                <div class="waveform-container shrink-0">
+                    <span class="waveform-bar"></span>
+                    <span class="waveform-bar"></span>
+                    <span class="waveform-bar"></span>
+                    <span class="waveform-bar"></span>
+                    <span class="waveform-bar"></span>
+                    <span class="waveform-bar"></span>
                 </div>
-                <div>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-xs uppercase font-extrabold tracking-wider text-rose-400">Listening...</span>
-                        <span class="text-xs text-slate-400">(Speak item, amount, category in Tamil/English)</span>
-                    </div>
-                    <p id="voice-live-transcript" class="text-sm font-medium text-slate-100 mt-0.5 truncate max-w-md sm:max-w-xl">
+                <div class="overflow-hidden">
+                    <div class="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Listening</div>
+                    <p id="voice-live-transcript" class="text-xs font-medium text-neutral-200 mt-0.5 truncate max-w-xs sm:max-w-md">
                         Say "Petrol 200", "Paal 30", or "EB bill 1450"...
                     </p>
                 </div>
             </div>
-            <div class="flex items-center space-x-2">
-                <button id="btn-stop-voice" type="button" class="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow transition-all">
+            <div class="flex items-center space-x-1.5 shrink-0 ml-3">
+                <button id="btn-stop-voice" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors">
                     Done
                 </button>
-                <button id="btn-cancel-voice" type="button" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all">
+                <button id="btn-cancel-voice" type="button" class="px-2.5 py-1.5 text-xs font-medium rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition-colors">
                     Cancel
                 </button>
             </div>
@@ -404,104 +431,94 @@
     </div>
 
     <!-- Modal: Monthly Budget Settings -->
-    <div id="modal-budget-settings" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 transform transition-all max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div class="flex items-center space-x-2.5">
-                    <div class="h-9 w-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
-                        <i class="fa-solid fa-sliders"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-base font-bold text-slate-900">Monthly Budget & Income Planner</h3>
-                        <p class="text-xs text-slate-400">Configure your target income and category allocations</p>
-                    </div>
+    <div id="modal-budget-settings" class="hidden fixed inset-0 bg-neutral-950/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-modal border border-black/[0.08] modal-enter max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-black/[0.06]">
+                <div>
+                    <h3 class="text-base font-bold text-neutral-900 tracking-tight">Monthly Budget & Income Planner</h3>
+                    <p class="text-xs text-neutral-400">Allocate household target income across all 7 categories</p>
                 </div>
-                <button id="btn-close-budget-modal" type="button" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <button id="btn-close-budget-modal" type="button" class="text-neutral-400 hover:text-neutral-700 p-1">
+                    <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
 
             <form id="form-budget-settings" class="space-y-4 mt-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Total Monthly Income (₹) *
+                    <label class="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">
+                        Monthly Income (₹) *
                     </label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 font-bold">₹</span>
-                        <input type="number" step="0.01" min="0" id="input-monthly-income" required class="w-full pl-8 pr-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-slate-800">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-neutral-400 font-semibold text-sm">₹</span>
+                        <input type="number" step="0.01" min="0" id="input-monthly-income" required class="editorial-input w-full pl-8 pr-3 py-2 font-bold text-neutral-900 tabular-nums">
                     </div>
                 </div>
 
-                <div class="pt-2 border-t border-slate-100">
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                            Category Allocations (₹)
-                        </label>
-                    </div>
-                    <div class="space-y-2.5" id="budget-category-inputs-container">
+                <div class="pt-2 border-t border-black/[0.05]">
+                    <label class="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-2">
+                        Category Allocations (₹)
+                    </label>
+                    <div class="space-y-2" id="budget-category-inputs-container">
                         <!-- Populated by app.js -->
                     </div>
                 </div>
 
-                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 text-xs space-y-1">
-                    <div class="flex justify-between text-slate-600">
+                <div class="bg-neutral-50 p-3.5 rounded-xl border border-black/[0.05] text-xs space-y-1">
+                    <div class="flex justify-between text-neutral-600">
                         <span>Total Budget Allocated:</span>
-                        <strong id="modal-budget-total-allocated" class="font-bold text-slate-800">₹0.00</strong>
+                        <strong id="modal-budget-total-allocated" class="font-bold text-neutral-900 tabular-nums">₹0.00</strong>
                     </div>
-                    <div class="flex justify-between text-slate-600">
-                        <span>Unallocated / Target Savings:</span>
-                        <strong id="modal-budget-unallocated" class="font-bold text-emerald-600">₹0.00</strong>
+                    <div class="flex justify-between text-neutral-600">
+                        <span>Unallocated / Net Target Savings:</span>
+                        <strong id="modal-budget-unallocated" class="font-bold text-emerald-600 tabular-nums">₹0.00</strong>
                     </div>
                 </div>
 
-                <div class="flex items-center justify-end space-x-2 pt-2">
-                    <button type="button" id="btn-cancel-budget-modal" class="px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:bg-slate-100 transition-all">
+                <div class="flex items-center justify-end space-x-2 pt-2 border-t border-black/[0.05]">
+                    <button type="button" id="btn-cancel-budget-modal" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg text-neutral-600 hover:bg-neutral-100 transition-colors">
                         Cancel
                     </button>
-                    <button type="submit" class="px-4 py-2 text-xs font-bold rounded-xl text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-600/20 transition-all">
-                        <i class="fa-solid fa-check mr-1.5"></i> Save Budget
+                    <button type="submit" class="px-4 py-1.5 text-xs font-semibold rounded-lg text-white bg-neutral-900 hover:bg-neutral-800 shadow-sm transition-colors">
+                        Save Budget
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal: Add Expense (Manual Form - Date Only, No Time) -->
-    <div id="modal-add-expense" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+    <!-- Modal: Add Expense (Manual Entry - Date Only, No Time) -->
+    <div id="modal-add-expense" class="hidden fixed inset-0 bg-neutral-950/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-modal border border-black/[0.08] modal-enter">
+            <div class="flex items-center justify-between pb-3 border-b border-black/[0.06]">
                 <div class="flex items-center space-x-2">
-                    <div class="h-8 w-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
-                        <i class="fa-solid fa-receipt"></i>
-                    </div>
-                    <h3 class="text-base font-bold text-slate-900">Add New Expense</h3>
+                    <h3 class="text-base font-bold text-neutral-900 tracking-tight">Add Expense</h3>
                 </div>
-                <button id="btn-close-add-modal" type="button" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <button id="btn-close-add-modal" type="button" class="text-neutral-400 hover:text-neutral-700 p-1">
+                    <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
 
-            <form id="form-add-expense" class="space-y-4 mt-4">
+            <form id="form-add-expense" class="space-y-3.5 mt-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Item Description *</label>
-                    <input type="text" id="input-item" required placeholder="e.g. Vegetables, Petrol, EB Bill, Xerox" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <label class="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">Item Description *</label>
+                    <input type="text" id="input-item" required placeholder="e.g. Vegetables, Petrol, EB Bill, Xerox" class="editorial-input w-full px-3 py-2 text-sm">
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Amount (₹) *</label>
-                        <input type="number" step="0.01" min="0.01" id="input-amount" required placeholder="0.00" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold">
+                        <label class="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">Amount (₹) *</label>
+                        <input type="number" step="0.01" min="0.01" id="input-amount" required placeholder="0.00" class="editorial-input w-full px-3 py-2 text-sm font-bold text-neutral-900 tabular-nums">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Date (YYYY-MM-DD) *</label>
-                        <input type="date" id="input-date" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <label class="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">Date (YYYY-MM-DD) *</label>
+                        <input type="date" id="input-date" required class="editorial-input w-full px-3 py-2 text-sm tabular-nums">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Category *</label>
-                        <select id="input-category" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                        <label class="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">Category *</label>
+                        <select id="input-category" required class="editorial-input w-full px-3 py-2 text-sm bg-white font-medium">
                             <option value="Food">Food</option>
                             <option value="Groceries">Groceries</option>
                             <option value="Bike & Car">Bike & Car</option>
@@ -512,8 +529,8 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Payment Mode *</label>
-                        <select id="input-payment-mode" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                        <label class="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">Payment Mode *</label>
+                        <select id="input-payment-mode" required class="editorial-input w-full px-3 py-2 text-sm bg-white">
                             <option value="UPI">UPI / GPay</option>
                             <option value="Cash">Cash</option>
                             <option value="Credit Card">Credit Card</option>
@@ -524,62 +541,58 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Notes (Optional)</label>
-                    <input type="text" id="input-notes" placeholder="Optional context or memo" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <label class="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">Notes (Optional)</label>
+                    <input type="text" id="input-notes" placeholder="Optional context or memo" class="editorial-input w-full px-3 py-2 text-sm">
                 </div>
 
-                <div class="flex items-center justify-end space-x-2 pt-2">
-                    <button type="button" id="btn-cancel-add-modal" class="px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:bg-slate-100 transition-all">Cancel</button>
-                    <button type="submit" class="px-4 py-2 text-xs font-bold rounded-xl text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-600/20 transition-all">Save Expense</button>
+                <div class="flex items-center justify-end space-x-2 pt-2 border-t border-black/[0.05]">
+                    <button type="button" id="btn-cancel-add-modal" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg text-neutral-600 hover:bg-neutral-100 transition-colors">Cancel</button>
+                    <button type="submit" class="px-4 py-1.5 text-xs font-semibold rounded-lg text-white bg-neutral-900 hover:bg-neutral-800 shadow-sm transition-colors">Save Expense</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal: Voice Confirmation & Editor (Date Only, No Time) -->
-    <div id="modal-voice-confirm" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div class="flex items-center space-x-2">
-                    <div class="h-8 w-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-base font-bold text-slate-900">Confirm Voice Entry</h3>
-                        <p class="text-[11px] text-slate-400">Review & edit parsed fields before saving</p>
-                    </div>
+    <!-- Modal: Voice Confirmation (Apple/Linear Clean Tags) -->
+    <div id="modal-voice-confirm" class="hidden fixed inset-0 bg-neutral-950/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-modal border border-black/[0.08] modal-enter">
+            <div class="flex items-center justify-between pb-3 border-b border-black/[0.06]">
+                <div>
+                    <h3 class="text-base font-bold text-neutral-900 tracking-tight">Confirm Voice Expense</h3>
+                    <p class="text-[11px] text-neutral-400">Review AI extracted details before committing</p>
                 </div>
-                <button id="btn-close-voice-confirm" type="button" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <button id="btn-close-voice-confirm" type="button" class="text-neutral-400 hover:text-neutral-700 p-1">
+                    <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
 
-            <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 my-3">
-                <span class="text-[10px] uppercase font-bold text-indigo-600 tracking-wider">Voice Spoken Transcript:</span>
-                <p id="voice-original-text" class="text-xs text-indigo-950 font-medium italic mt-0.5">"..."</p>
+            <!-- Voice Spoken Preview -->
+            <div class="bg-neutral-50 border border-black/[0.05] rounded-xl p-3 my-3">
+                <span class="text-[10px] uppercase font-bold text-neutral-500 tracking-wider">Voice Input:</span>
+                <p id="voice-original-text" class="text-xs text-neutral-900 font-medium italic mt-0.5">"..."</p>
             </div>
 
             <form id="form-voice-confirm" class="space-y-3.5">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Item Description *</label>
-                    <input type="text" id="voice-input-item" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold">
+                    <label class="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">Item Description *</label>
+                    <input type="text" id="voice-input-item" required class="editorial-input w-full px-3 py-2 text-sm font-semibold text-neutral-900">
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Amount (₹) *</label>
-                        <input type="number" step="0.01" min="0.01" id="voice-input-amount" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-emerald-600">
+                        <label class="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">Amount (₹) *</label>
+                        <input type="number" step="0.01" min="0.01" id="voice-input-amount" required class="editorial-input w-full px-3 py-2 text-sm font-bold text-emerald-600 tabular-nums">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Date (YYYY-MM-DD) *</label>
-                        <input type="date" id="voice-input-date" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <label class="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">Date (YYYY-MM-DD) *</label>
+                        <input type="date" id="voice-input-date" required class="editorial-input w-full px-3 py-2 text-sm tabular-nums">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Category *</label>
-                        <select id="voice-input-category" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                        <label class="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">Category *</label>
+                        <select id="voice-input-category" required class="editorial-input w-full px-3 py-2 text-sm bg-white font-medium">
                             <option value="Food">Food</option>
                             <option value="Groceries">Groceries</option>
                             <option value="Bike & Car">Bike & Car</option>
@@ -590,8 +603,8 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Payment Mode *</label>
-                        <select id="voice-input-payment-mode" required class="w-full px-3 py-2 text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                        <label class="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">Payment Mode *</label>
+                        <select id="voice-input-payment-mode" required class="editorial-input w-full px-3 py-2 text-sm bg-white">
                             <option value="UPI">UPI / GPay</option>
                             <option value="Cash">Cash</option>
                             <option value="Credit Card">Credit Card</option>
@@ -601,10 +614,10 @@
                     </div>
                 </div>
 
-                <div class="flex items-center justify-end space-x-2 pt-2">
-                    <button type="button" id="btn-cancel-voice-confirm" class="px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:bg-slate-100 transition-all">Discard</button>
-                    <button type="submit" class="px-4 py-2 text-xs font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all">
-                        <i class="fa-solid fa-check mr-1.5"></i> Confirm & Save
+                <div class="flex items-center justify-end space-x-2 pt-2 border-t border-black/[0.05]">
+                    <button type="button" id="btn-cancel-voice-confirm" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg text-neutral-600 hover:bg-neutral-100 transition-colors">Discard</button>
+                    <button type="submit" class="px-4 py-1.5 text-xs font-semibold rounded-lg text-white bg-neutral-900 hover:bg-neutral-800 shadow-sm transition-colors">
+                        Confirm & Save
                     </button>
                 </div>
             </form>
@@ -612,52 +625,46 @@
     </div>
 
     <!-- Modal: Password-Protected Reset Database -->
-    <div id="modal-reset-db" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-rose-200 transform transition-all">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div class="flex items-center space-x-2.5">
-                    <div class="h-9 w-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-base">
+    <div id="modal-reset-db" class="hidden fixed inset-0 bg-neutral-950/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-modal border border-rose-200 modal-enter">
+            <div class="flex items-center justify-between pb-3 border-b border-black/[0.06]">
+                <div class="flex items-center space-x-2">
+                    <div class="h-8 w-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs font-bold">
                         <i class="fa-solid fa-triangle-exclamation"></i>
                     </div>
                     <div>
-                        <h3 class="text-base font-bold text-slate-900">Reset Expense Database</h3>
-                        <p class="text-xs text-rose-600 font-semibold">Danger Zone: Irreversible Action</p>
+                        <h3 class="text-base font-bold text-neutral-900 tracking-tight">Reset Database</h3>
+                        <p class="text-[11px] text-rose-600 font-semibold">Irreversible Action</p>
                     </div>
                 </div>
-                <button id="btn-close-reset-modal" type="button" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <button id="btn-close-reset-modal" type="button" class="text-neutral-400 hover:text-neutral-700 p-1">
+                    <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
 
-            <div class="bg-rose-50 border border-rose-200 rounded-xl p-3.5 my-4 text-xs text-rose-900 space-y-1">
-                <p class="font-bold">⚠️ Warning: Permanent Data Deletion</p>
-                <p class="text-rose-700 leading-relaxed">
+            <div class="bg-rose-50/70 border border-rose-200/80 rounded-xl p-3.5 my-3.5 text-xs text-rose-950 space-y-1">
+                <p class="font-bold">Permanent Data Deletion</p>
+                <p class="text-rose-700 leading-relaxed text-[11px]">
                     This will permanently delete all expense records in <code>data/expenses.csv</code>, wipe archives, and reset all budget configurations.
                 </p>
             </div>
 
-            <form id="form-reset-db" class="space-y-4">
+            <form id="form-reset-db" class="space-y-3.5">
                 <div>
-                    <label for="input-admin-password" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    <label for="input-admin-password" class="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1">
                         Admin Security Password *
                     </label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-                            <i class="fa-solid fa-lock text-xs"></i>
-                        </span>
-                        <input type="password" id="input-admin-password" required placeholder="Enter admin password (default: admin123)"
-                            class="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all">
-                    </div>
+                    <input type="password" id="input-admin-password" required placeholder="Enter admin password (default: admin123)"
+                        class="editorial-input w-full px-3 py-2 text-sm">
                     <span id="reset-error-msg" class="hidden text-xs text-rose-600 font-semibold mt-1 block"></span>
                 </div>
 
-                <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
-                    <button id="btn-cancel-reset" type="button" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
+                <div class="flex items-center justify-end space-x-2 pt-2 border-t border-black/[0.05]">
+                    <button id="btn-cancel-reset" type="button" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg text-neutral-600 hover:bg-neutral-100 transition-colors">
                         Cancel
                     </button>
-                    <button id="btn-confirm-reset" type="submit" class="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md shadow-rose-600/25 transition-all">
-                        <i class="fa-solid fa-trash-can"></i>
-                        <span>Confirm Reset</span>
+                    <button id="btn-confirm-reset" type="submit" class="px-4 py-1.5 text-xs font-bold rounded-lg text-white bg-rose-600 hover:bg-rose-700 shadow-sm transition-colors">
+                        Confirm Reset
                     </button>
                 </div>
             </form>
@@ -665,57 +672,56 @@
     </div>
 
     <!-- Modal: Email Monthly Financial Report -->
-    <div id="modal-email-report" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div class="flex items-center space-x-2.5">
-                    <div class="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-base">
-                        <i class="fa-solid fa-paper-plane"></i>
+    <div id="modal-email-report" class="hidden fixed inset-0 bg-neutral-950/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-modal border border-black/[0.08] modal-enter">
+            <div class="flex items-center justify-between pb-3 border-b border-black/[0.06]">
+                <div class="flex items-center space-x-2">
+                    <div class="h-8 w-8 rounded-lg bg-neutral-100 text-neutral-700 flex items-center justify-center text-xs">
+                        <i class="fa-regular fa-paper-plane"></i>
                     </div>
                     <div>
-                        <h3 class="text-base font-bold text-slate-900">Email Monthly Report</h3>
-                        <p class="text-xs text-slate-400">Dispatch itemized statement with CSV attachment</p>
+                        <h3 class="text-base font-bold text-neutral-900 tracking-tight">Email Monthly Report</h3>
+                        <p class="text-[11px] text-neutral-400">Dispatch itemized statement with CSV attachment</p>
                     </div>
                 </div>
-                <button id="btn-close-email-modal" type="button" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <button id="btn-close-email-modal" type="button" class="text-neutral-400 hover:text-neutral-700 p-1">
+                    <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
 
-            <div class="my-4 space-y-3 text-xs text-slate-600">
-                <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3.5 space-y-1.5">
+            <div class="my-4 space-y-3 text-xs text-neutral-600">
+                <div class="bg-neutral-50 border border-black/[0.05] rounded-xl p-3.5 space-y-1.5">
                     <div class="flex justify-between">
-                        <span class="text-slate-500">Report Month:</span>
-                        <strong id="email-report-month-label" class="text-slate-800 font-bold">Current Month</strong>
+                        <span class="text-neutral-400 font-medium">Month:</span>
+                        <strong id="email-report-month-label" class="text-neutral-900 font-semibold">Current Month</strong>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-slate-500">Recipient:</span>
-                        <strong class="text-indigo-700 font-bold">sarveshsantosh2007s@gmail.com</strong>
+                        <span class="text-neutral-400 font-medium">Recipient:</span>
+                        <strong class="text-neutral-900 font-mono text-[11px]">sarveshsantosh2007s@gmail.com</strong>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-slate-500">Attachment:</span>
-                        <code id="email-report-attachment-name" class="text-[11px] text-slate-700 font-mono">Expenses.csv</code>
+                        <span class="text-neutral-400 font-medium">Attachment:</span>
+                        <code id="email-report-attachment-name" class="text-[11px] text-neutral-700 font-mono">Expenses.csv</code>
                     </div>
                 </div>
-                <p class="text-slate-500 text-[11px] leading-relaxed">
-                    The email will contain total spend, monthly net savings, category budgets, and an itemized CSV attachment.
+                <p class="text-neutral-400 text-[11px] leading-relaxed">
+                    The report will include total spending, monthly net savings, category budgets, and a clean CSV file attachment.
                 </p>
                 <div id="email-status-banner" class="hidden p-2.5 rounded-lg text-xs font-semibold"></div>
             </div>
 
-            <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
-                <button id="btn-cancel-email" type="button" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
+            <div class="flex items-center justify-end space-x-2 pt-2 border-t border-black/[0.05]">
+                <button id="btn-cancel-email" type="button" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg text-neutral-600 hover:bg-neutral-100 transition-colors">
                     Cancel
                 </button>
-                <button id="btn-send-email-confirm" type="button" class="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/25 transition-all">
-                    <i class="fa-solid fa-envelope"></i>
-                    <span>Send Report Now</span>
+                <button id="btn-send-email-confirm" type="button" class="px-4 py-1.5 text-xs font-semibold rounded-lg text-white bg-neutral-900 hover:bg-neutral-800 shadow-sm transition-colors">
+                    Send Report Now
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Application Logic -->
+    <!-- Application Engine -->
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

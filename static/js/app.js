@@ -212,14 +212,14 @@ function renderTopStatCards(summary) {
     const savingsBar = document.getElementById("stat-savings-bar");
 
     if (netSavings >= 0) {
-        savingsEl.className = "text-2xl font-extrabold text-emerald-600 tracking-tight";
-        savingsRateBadge.className = "text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800";
+        savingsEl.className = "text-2xl font-bold tracking-tight text-emerald-600 tabular-nums";
+        savingsRateBadge.className = "text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80";
         savingsRateBadge.textContent = `${Math.max(0, savingsRate).toFixed(1)}% Saved`;
         savingsBar.className = "bg-emerald-500 h-full rounded-full transition-all duration-500";
         savingsBar.style.width = `${Math.min(100, Math.max(0, savingsRate))}%`;
     } else {
-        savingsEl.className = "text-2xl font-extrabold text-rose-600 tracking-tight";
-        savingsRateBadge.className = "text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800";
+        savingsEl.className = "text-2xl font-bold tracking-tight text-rose-600 tabular-nums";
+        savingsRateBadge.className = "text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200/80";
         savingsRateBadge.textContent = `Overspent by ${formatCurrency(Math.abs(netSavings))}`;
         savingsBar.className = "bg-rose-500 h-full rounded-full transition-all duration-500";
         savingsBar.style.width = "100%";
@@ -236,10 +236,10 @@ function renderTopStatCards(summary) {
 
     const dailyBadge = document.getElementById("stat-daily-status-badge");
     if (todaySpent > dailyTarget && dailyTarget > 0) {
-        dailyBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700";
+        dailyBadge.className = "text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200";
         dailyBadge.textContent = "Over Target";
     } else {
-        dailyBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700";
+        dailyBadge.className = "text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200";
         dailyBadge.textContent = "Within Target";
     }
 }
@@ -256,15 +256,15 @@ function renderCategoryBudgetCards(categoryBudgets) {
 
         const card = document.createElement("div");
         const isActive = state.categoryFilter === catName;
-        card.className = `category-card bg-white rounded-xl border p-3.5 shadow-sm hover:shadow transition-all cursor-pointer relative overflow-hidden ${
-            isActive ? "border-brand-600 ring-2 ring-brand-500/20" : "border-slate-200/80"
+        card.className = `category-card bg-white rounded-xl border p-3 shadow-2xs hover:shadow-xs transition-all cursor-pointer relative overflow-hidden ${
+            isActive ? "border-neutral-900 ring-1 ring-neutral-900 bg-neutral-50/60" : "border-black/[0.07] hover:border-black/20"
         }`;
 
-        let progressColor = "bg-emerald-500";
+        let progressColor = "bg-neutral-900";
         let statusBadge = "";
         if (data.is_over) {
             progressColor = "bg-rose-500";
-            statusBadge = `<span class="text-[9px] font-extrabold text-rose-600 uppercase">Over!</span>`;
+            statusBadge = `<span class="text-[9px] font-bold text-rose-600 uppercase tracking-wider">Over</span>`;
         } else if (data.pct_used >= 75) {
             progressColor = "bg-amber-500";
         }
@@ -273,29 +273,29 @@ function renderCategoryBudgetCards(categoryBudgets) {
 
         card.innerHTML = `
             <div class="flex items-center justify-between mb-2">
-                <div class="h-7 w-7 rounded-lg ${cfg.lightBgClass} ${cfg.textColor} flex items-center justify-center text-xs">
+                <div class="h-6 w-6 rounded-md bg-neutral-100 text-neutral-700 flex items-center justify-center text-[11px]">
                     <i class="fa-solid ${cfg.icon}"></i>
                 </div>
                 ${statusBadge}
             </div>
             <div class="space-y-0.5">
-                <h4 class="text-xs font-bold text-slate-800 truncate">${catName}</h4>
-                <div class="text-[11px] text-slate-400 font-medium truncate">
+                <h4 class="text-xs font-bold text-neutral-900 truncate tracking-tight">${catName}</h4>
+                <div class="text-[11px] text-neutral-400 font-medium truncate tabular-nums">
                     Bud: ${formatCompactCurrency(data.allocated)}
                 </div>
             </div>
             <div class="mt-2.5 flex items-baseline justify-between">
-                <span class="text-sm font-extrabold text-slate-900">${formatCurrency(data.spent)}</span>
-                <span class="text-[10px] ${data.remaining < 0 ? 'text-rose-600 font-bold' : 'text-slate-500'}">
+                <span class="text-sm font-bold text-neutral-950 tabular-nums">${formatCurrency(data.spent)}</span>
+                <span class="text-[10px] tabular-nums ${data.remaining < 0 ? 'text-rose-600 font-semibold' : 'text-neutral-500'}">
                     ${data.remaining >= 0 ? `${formatCompactCurrency(data.remaining)} left` : `-${formatCompactCurrency(Math.abs(data.remaining))}`}
                 </span>
             </div>
-            <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div class="w-full bg-neutral-100 h-1 rounded-full mt-2 overflow-hidden">
                 <div class="${progressColor} h-full rounded-full transition-all duration-300" style="width: ${cappedPct}%"></div>
             </div>
-            <div class="mt-1.5 flex items-center justify-between text-[10px] text-slate-400">
-                <span>${data.pct_used.toFixed(0)}% used</span>
-                <span class="text-brand-600 font-semibold hover:underline">${isActive ? 'Active' : 'Filter →'}</span>
+            <div class="mt-1.5 flex items-center justify-between text-[10px] text-neutral-400">
+                <span class="tabular-nums">${data.pct_used.toFixed(0)}% used</span>
+                <span class="text-neutral-700 font-semibold hover:underline">${isActive ? 'Active' : 'Filter →'}</span>
             </div>
         `;
 
@@ -347,19 +347,19 @@ function renderEnhancedCharts(summary) {
                     {
                         label: "Daily Spend",
                         data: dailyValues,
-                        backgroundColor: "#6366f1",
-                        hoverBackgroundColor: "#4f46e5",
-                        borderRadius: 4,
-                        barPercentage: 0.65,
+                        backgroundColor: "#18181b",
+                        hoverBackgroundColor: "#27272a",
+                        borderRadius: 3,
+                        barPercentage: 0.6,
                         order: 2
                     },
                     {
                         type: "line",
                         label: "Daily Target Burn Rate",
                         data: dailyTargetLine,
-                        borderColor: "#f43f5e",
-                        borderWidth: 2,
-                        borderDash: [4, 4],
+                        borderColor: "#e11d48",
+                        borderWidth: 1.5,
+                        borderDash: [3, 3],
                         pointRadius: 0,
                         fill: false,
                         order: 1
@@ -373,6 +373,15 @@ function renderEnhancedCharts(summary) {
                 plugins: {
                     legend: { display: false },
                     tooltip: {
+                        backgroundColor: "#18181b",
+                        titleColor: "#ffffff",
+                        bodyColor: "#f4f4f5",
+                        borderColor: "rgba(255,255,255,0.1)",
+                        borderWidth: 1,
+                        padding: 8,
+                        cornerRadius: 8,
+                        titleFont: { size: 11, weight: "bold" },
+                        bodyFont: { size: 11 },
                         callbacks: {
                             title: (items) => `${items[0].label} ${summary.month_label || ""}`,
                             label: (ctx) => ` ${ctx.dataset.label}: ${formatCurrency(ctx.parsed.y)}`
@@ -382,15 +391,16 @@ function renderEnhancedCharts(summary) {
                 scales: {
                     x: {
                         grid: { display: false },
-                        ticks: { font: { size: 10 }, maxTicksLimit: 16 }
+                        ticks: { font: { size: 10 }, color: "#a1a1aa", maxTicksLimit: 16 }
                     },
                     y: {
                         beginAtZero: true,
                         ticks: {
                             callback: (val) => `₹${val}`,
-                            font: { size: 10 }
+                            font: { size: 10 },
+                            color: "#a1a1aa"
                         },
-                        grid: { color: "#f1f5f9" }
+                        grid: { color: "rgba(0, 0, 0, 0.04)" }
                     }
                 }
             }
@@ -405,7 +415,7 @@ function renderEnhancedCharts(summary) {
 
     const rankingLabels = sortedCategories.map(c => c.category);
     const rankingData = sortedCategories.map(c => c.total);
-    const rankingColors = sortedCategories.map(c => (CATEGORY_CONFIG[c.category] ? CATEGORY_CONFIG[c.category].color : "#6366f1"));
+    const rankingColors = sortedCategories.map(c => (CATEGORY_CONFIG[c.category] ? CATEGORY_CONFIG[c.category].color : "#18181b"));
 
     const ctxRanking = document.getElementById("chart-category-ranking");
     if (ctxRanking) {
@@ -419,8 +429,8 @@ function renderEnhancedCharts(summary) {
                     label: "Spend",
                     data: rankingData,
                     backgroundColor: rankingColors,
-                    borderRadius: 4,
-                    barThickness: 16
+                    borderRadius: 3,
+                    barThickness: 14
                 }]
             },
             options: {
@@ -437,6 +447,15 @@ function renderEnhancedCharts(summary) {
                 plugins: {
                     legend: { display: false },
                     tooltip: {
+                        backgroundColor: "#18181b",
+                        titleColor: "#ffffff",
+                        bodyColor: "#f4f4f5",
+                        borderColor: "rgba(255,255,255,0.1)",
+                        borderWidth: 1,
+                        padding: 8,
+                        cornerRadius: 8,
+                        titleFont: { size: 11, weight: "bold" },
+                        bodyFont: { size: 11 },
                         callbacks: {
                             label: (ctx) => ` Spend: ${formatCurrency(ctx.parsed.x)}`
                         }
@@ -447,12 +466,13 @@ function renderEnhancedCharts(summary) {
                         beginAtZero: true,
                         ticks: {
                             callback: (val) => `₹${val}`,
-                            font: { size: 10 }
+                            font: { size: 10 },
+                            color: "#a1a1aa"
                         },
-                        grid: { color: "#f1f5f9" }
+                        grid: { color: "rgba(0, 0, 0, 0.04)" }
                     },
                     y: {
-                        ticks: { font: { size: 11, weight: "bold" } },
+                        ticks: { font: { size: 10, weight: "600" }, color: "#52525b" },
                         grid: { display: false }
                     }
                 }
@@ -507,26 +527,29 @@ function renderExpensesList(expenses, total, count) {
     listEl.innerHTML = expenses.map(item => {
         const catCfg = CATEGORY_CONFIG[item.category] || CATEGORY_CONFIG["General & Others"];
         return `
-            <div class="bg-white rounded-xl border border-slate-100 p-3 shadow-xs hover:shadow-sm transition-all flex items-start justify-between">
-                <div class="flex items-start space-x-3">
-                    <div class="h-9 w-9 rounded-xl ${catCfg.lightBgClass} ${catCfg.textColor} flex items-center justify-center text-sm shrink-0 mt-0.5">
+            <div class="group py-2.5 px-3 rounded-lg hover:bg-neutral-50/80 border border-transparent hover:border-black/[0.05] transition-all flex items-center justify-between">
+                <div class="flex items-center space-x-3 min-w-0">
+                    <div class="h-7 w-7 rounded-md bg-neutral-100 text-neutral-700 flex items-center justify-center text-xs shrink-0">
                         <i class="fa-solid ${catCfg.icon}"></i>
                     </div>
-                    <div class="space-y-0.5">
-                        <h4 class="text-sm font-bold text-slate-800 leading-snug">${item.item}</h4>
-                        <div class="flex items-center space-x-2 text-xs text-slate-400">
-                            <span class="font-medium text-slate-500">${item.category}</span>
-                            <span>•</span>
-                            <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-semibold">
-                                <i class="fa-solid fa-credit-card mr-1 text-[9px]"></i>${item.payment_mode || "UPI"}
-                            </span>
-                            <span>${item.date}</span>
+                    <div class="min-w-0">
+                        <div class="flex items-center space-x-2">
+                            <h4 class="text-xs font-semibold text-neutral-900 truncate">${item.item}</h4>
+                            <span class="text-[10px] text-neutral-300">•</span>
+                            <span class="text-[10px] text-neutral-500 font-medium">${item.category}</span>
                         </div>
-                        ${item.notes ? `<p class="text-[11px] text-slate-400 italic mt-0.5 truncate max-w-xs">${item.notes}</p>` : ""}
+                        <div class="flex items-center space-x-2 text-[10px] text-neutral-400 mt-0.5">
+                            <span class="font-mono">${item.date}</span>
+                            <span>•</span>
+                            <span class="inline-flex items-center px-1.5 py-0.2 rounded bg-neutral-100 text-neutral-600 font-medium">
+                                ${item.payment_mode || "UPI"}
+                            </span>
+                            ${item.notes ? `<span>•</span><span class="truncate max-w-[140px] italic">${item.notes}</span>` : ""}
+                        </div>
                     </div>
                 </div>
-                <div class="text-right">
-                    <span class="text-base font-extrabold text-slate-900">${formatCurrency(item.amount)}</span>
+                <div class="text-right shrink-0 ml-3">
+                    <span class="text-xs sm:text-sm font-bold text-neutral-950 tabular-nums">${formatCurrency(item.amount)}</span>
                 </div>
             </div>
         `;
@@ -552,7 +575,7 @@ function renderCalendar(dailyTotals) {
 
     for (let i = 0; i < firstDayIndex; i++) {
         const blank = document.createElement("div");
-        blank.className = "h-14 sm:h-16 rounded-xl bg-slate-50/50 border border-transparent";
+        blank.className = "h-11 sm:h-12 rounded-lg bg-neutral-50/40 border border-transparent";
         calendarGrid.appendChild(blank);
     }
 
@@ -563,21 +586,21 @@ function renderCalendar(dailyTotals) {
 
         const tile = document.createElement("button");
         tile.type = "button";
-        tile.className = `calendar-tile h-14 sm:h-16 rounded-xl border p-1 sm:p-1.5 flex flex-col justify-between text-left transition-all ${
+        tile.className = `calendar-tile h-11 sm:h-12 rounded-lg border p-1 sm:p-1.5 flex flex-col justify-between text-left transition-all ${
             isSelected
-                ? "border-brand-600 ring-2 ring-brand-500/30 bg-brand-50/40"
+                ? "border-neutral-900 bg-neutral-100/80 shadow-2xs"
                 : hasSpend
-                ? "border-emerald-200/80 bg-white hover:border-slate-300"
-                : "border-slate-100 bg-white hover:bg-slate-50"
+                ? "border-emerald-200/90 bg-white hover:border-black/20"
+                : "border-black/[0.05] bg-white hover:bg-neutral-50"
         }`;
 
         tile.innerHTML = `
             <div class="flex items-center justify-between">
-                <span class="text-xs font-bold ${isSelected ? 'text-brand-700' : 'text-slate-700'}">${day}</span>
+                <span class="text-[11px] font-bold ${isSelected ? 'text-neutral-950' : 'text-neutral-600'}">${day}</span>
                 ${hasSpend ? '<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>' : ''}
             </div>
             <div class="text-right">
-                ${hasSpend ? `<span class="text-[10px] sm:text-[11px] font-extrabold text-emerald-600 block">${formatCompactCurrency(dateSpendMap[dateStr])}</span>` : '<span class="text-[9px] text-slate-300">-</span>'}
+                ${hasSpend ? `<span class="text-[10px] font-bold text-emerald-600 block tabular-nums">${formatCompactCurrency(dateSpendMap[dateStr])}</span>` : '<span class="text-[9px] text-neutral-300">-</span>'}
             </div>
         `;
 
