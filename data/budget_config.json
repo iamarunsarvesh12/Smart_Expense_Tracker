@@ -1,0 +1,13 @@
+{
+  "monthly_income": 30000.0,
+  "categories": {
+    "Food": 5000.0,
+    "Groceries": 6000.0,
+    "Bike & Car": 4000.0,
+    "Bills & Utilities": 3500.0,
+    "Stationery & Office": 1500.0,
+    "Medical & Healthcare": 3000.0,
+    "General & Others": 2500.0
+  },
+  "updated_at": "2026-10-17T19:56:53"
+}

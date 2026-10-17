@@ -1,7 +1,8 @@
 id,date,time,category,item,amount,payment_mode,notes
-exp_cc0e2518,2026-10-17,08:30:00,Food & Groceries,Milk and Bread,75.5,UPI,Daily morning supplies
-exp_b7041bfd,2026-10-17,12:15:00,Fuel & Commute,Petrol,500.0,Credit Card,Bike fuel
-exp_4713cceb,2026-10-16,18:00:00,Stationery & Office,Notebooks and Pens,120.0,Cash,
-exp_429804f6,2026-09-10,10:00:00,Medical & Healthcare,Doctor consultation and pills,800.0,UPI,Routine checkup
-exp_81639b23,2026-08-20,15:00:00,General & Daily Utilities,Electricity Bill,1450.0,Net Banking,August bill
-exp_9883f5c1,2026-10-17,19:33:39,Fuel & Commute,Petrol,500.0,Credit Card,"Voice input: ""Petrol 500 potten card"""
+exp_cd49db66,2026-10-17,08:30:00,Groceries,Vegetables and Milk,75.5,UPI,Morning supplies
+exp_d4a4ed44,2026-10-17,12:15:00,Food,Restaurant Meals,250.0,Credit Card,Lunch
+exp_ab01b195,2026-10-17,14:00:00,Bike & Car,Petrol,500.0,UPI,Bike fuel
+exp_3f344b21,2026-10-16,18:00:00,Stationery & Office,Printout and Xerox,120.0,Cash,
+exp_2e59f9fe,2026-09-10,10:00:00,Medical & Healthcare,Medicines & Doctor consultation,800.0,UPI,Routine checkup
+exp_a64bd0b1,2026-08-20,15:00:00,Bills & Utilities,EB Electricity Bill,1450.0,Net Banking,August bill
+exp_7b7ae2c6,2026-10-17,19:56:55,Bike & Car,Petrol,500.0,Credit Card,"Voice input: ""Petrol 500 potten card"""

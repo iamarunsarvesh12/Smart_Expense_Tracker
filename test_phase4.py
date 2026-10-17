@@ -1,6 +1,6 @@
 """
 Phase 4 Automated Verification Suite
-Tests AI Voice Assistant natural language parser, endpoints, and frontend bindings.
+Tests AI Voice Assistant natural language parser, endpoints, and frontend bindings across all 7 categories.
 """
 
 import json
@@ -10,18 +10,24 @@ import storage
 
 def run_phase4_tests():
     client = app.test_client()
-    print("=== STARTING PHASE 4 AUTOMATED TEST SUITE ===")
+    print("=== STARTING 7-CATEGORY VOICE NLP AUTOMATED TEST SUITE ===")
 
-    # 1. Test POST /api/parse-voice with all specified Tanglish & English patterns
+    # 1. Test POST /api/parse-voice with all specified Tanglish & English patterns across the 7 categories
     voice_cases = [
-        ("Paal vanginen 30 rupees", "Paal", 30.0, "Food & Groceries"),
-        ("Milk 30", "Milk", 30.0, "Food & Groceries"),
-        ("Petrol 200 potten", "Petrol", 200.0, "Fuel & Commute"),
+        ("Paal vanginen 30 rupees", "Paal", 30.0, "Groceries"),
+        ("Milk 30", "Milk", 30.0, "Groceries"),
+        ("Tea 15 rupees", "Tea", 15.0, "Food"),
+        ("Swiggy biryani 350", "Swiggy Biryani", 350.0, "Food"),
+        ("Petrol 200 potten", "Petrol", 200.0, "Bike & Car"),
+        ("Puncture 50", "Puncture", 50.0, "Bike & Car"),
+        ("EB bill 1450", "Eb Bill", 1450.0, "Bills & Utilities"),
+        ("Recharge paninen 299", "Recharge", 299.0, "Bills & Utilities"),
         ("Printout 50 rupees", "Printout", 50.0, "Stationery & Office"),
         ("Xerox 40", "Xerox", 40.0, "Stationery & Office"),
         ("Tablet 150 rooba", "Tablet", 150.0, "Medical & Healthcare"),
         ("Doctor fees 300", "Doctor Fees", 300.0, "Medical & Healthcare"),
-        ("Recharge paninen 299", "Recharge", 299.0, "General & Daily Utilities")
+        ("Money given to friend 1000", "Money Given Friend", 1000.0, "General & Others"),
+        ("Casual cash 150", "Casual", 150.0, "General & Others")
     ]
 
     for phrase, expected_item, expected_amt, expected_cat in voice_cases:
@@ -37,7 +43,7 @@ def run_phase4_tests():
         assert data["amount"] == expected_amt, f"Expected {expected_amt}, got {data['amount']} in '{phrase}'"
         assert data["category"] == expected_cat, f"Expected {expected_cat}, got {data['category']} in '{phrase}'"
         assert expected_item.lower() in data["item"].lower(), f"Expected '{expected_item}' in '{data['item']}'"
-    print(f"[PASS] [1/4] POST /api/parse-voice correctly parsed all {len(voice_cases)} test phrases.")
+    print(f"[PASS] [1/4] POST /api/parse-voice correctly parsed all {len(voice_cases)} test phrases into the 7 categories.")
 
     # 2. Test relative date parsing (yesterday / nethu)
     res = client.post(
@@ -50,8 +56,9 @@ def run_phase4_tests():
     data = res.get_json()["data"]
     assert data["date"] == yesterday_str
     assert data["amount"] == 120.0
+    assert data["category"] == "Groceries"
     assert data["payment_mode"] == "UPI"
-    print("[PASS] [2/4] Relative date ('nethu') and payment mode ('gpay') correctly extracted.")
+    print("[PASS] [2/4] Relative date ('nethu'), Groceries category, and payment mode ('gpay') correctly extracted.")
 
     # 3. Test Full Confirmation Flow (Parse -> Confirm & Save to expenses.csv)
     parse_res = client.post(
@@ -93,7 +100,7 @@ def run_phase4_tests():
         assert el in html, f"Missing voice UI element ID '{el}' in index.html"
 
     print("[PASS] [4/4] All Phase 4 Frontend Voice UI elements verified in template.")
-    print("\nALL PHASE 4 TESTS COMPLETED WITH ZERO ERRORS!")
+    print("\nALL 7-CATEGORY VOICE TESTS COMPLETED WITH ZERO ERRORS!")
 
 if __name__ == "__main__":
     run_phase4_tests()

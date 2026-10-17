@@ -117,6 +117,24 @@ body {
     background-color: #eff6ff;
 }
 
+/* Category Card Interactive States */
+.category-card {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.category-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+}
+
+.category-card.active-filter {
+    border-color: #4f46e5 !important;
+    ring-2: 2px solid #4f46e5;
+    background-color: #f8faff !important;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
+}
+
 /* Floating Action Button (FAB) */
 .fab-voice-btn {
     box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4), 0 8px 10px -6px rgba(79, 70, 229, 0.2);

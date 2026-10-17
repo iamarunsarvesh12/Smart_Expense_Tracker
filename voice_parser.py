@@ -1,6 +1,7 @@
 """
 Smart Home Expense Tracker - Voice & Natural Language Parser
 Extracts amount, category, item, payment mode, and date from spoken Tanglish/English text.
+Calibrated for the 7 Granular Expense Categories.
 """
 
 import re
@@ -9,53 +10,83 @@ from typing import Dict, Any, Optional
 
 import storage
 
-# Category Keywords (English + Tanglish / Tamil Transliterated)
+# Category Keywords (English + Tanglish / Tamil Transliterated) for 7 Categories
 CATEGORY_KEYWORDS = {
-    "Food & Groceries": [
-        "milk", "paal", "pal", "grocery", "groceries", "maligai", "provisions",
-        "vegetable", "vegetables", "veggies", "kaygari", "kaaikari", "thakkali", "tomato",
-        "onion", "vengayam", "potato", "urulaikizhangu", "fruits", "fruit", "pazham",
-        "biryani", "briyani", "rice", "saadham", "tea", "chai", "coffee", "kaapi",
-        "hotel", "restaurant", "food", "sappadu", "snacks", "tiffin", "breakfast",
-        "lunch", "dinner", "biscuit", "biscuits", "curd", "thayir", "bread", "butter",
-        "egg", "eggs", "muttai", "chicken", "mutton", "fish", "meen", "oil", "ennai"
+    # 1. Food (Restaurant, Tea, Snacks, Swiggy/Zomato, Outside food)
+    "Food": [
+        "food", "hotel", "restaurant", "swiggy", "zomato", "tea", "chai", "coffee",
+        "kaapi", "snacks", "tiffin", "breakfast", "lunch", "dinner", "biryani",
+        "briyani", "fast food", "bakery", "cake", "pizza", "burger", "samosa",
+        "juice", "cool drinks", "mess", "shawarma", "noodles", "parotta", "biscuit",
+        "biscuits", "ice cream", "sweet", "sweets"
     ],
-    "Fuel & Commute": [
-        "petrol", "diesel", "fuel", "gas", "auto", "auto fare", "cab", "taxi",
-        "bus", "bus fare", "ticket", "toll", "parking", "bike service", "car service",
-        "puncture", "service", "uber", "ola", "rapido", "metro", "train", "commute",
-        "travel", "ride"
+
+    # 2. Groceries (Provisions, Vegetables, Milk/Paal, Supermarket items)
+    "Groceries": [
+        "grocery", "groceries", "provisions", "maligai", "supermarket", "vegetable",
+        "vegetables", "veggies", "kaygari", "kaaikari", "thakkali", "tomato", "onion",
+        "vengayam", "potato", "urulaikizhangu", "fruits", "fruit", "pazham", "milk",
+        "paal", "pal", "curd", "thayir", "butter", "paneer", "rice", "saadham", "arisi",
+        "oil", "ennai", "egg", "eggs", "muttai", "chicken", "mutton", "fish", "meen",
+        "wheat", "dhal", "paruppu", "masala", "salt", "sugar", "department store"
     ],
+
+    # 3. Bike & Car (Petrol, Diesel, Vehicle Service, Mechanics, Puncture, Toll)
+    "Bike & Car": [
+        "petrol", "diesel", "fuel", "bike", "car", "vehicle", "service", "bike service",
+        "car service", "mechanic", "puncture", "tyre", "air", "toll", "toll gate",
+        "parking", "auto", "auto fare", "cab", "taxi", "rapido", "uber", "ola",
+        "spare parts", "wash", "car wash", "bike wash", "engine oil", "scooter",
+        "activa", "bullet", "helmet", "clutch", "brake"
+    ],
+
+    # 4. Bills & Utilities (EB / Electricity Bill, Wi-Fi / Broadband Bill, Mobile Recharge, Gas cylinder)
+    "Bills & Utilities": [
+        "recharge", "mobile recharge", "phone recharge", "eb bill", "current bill",
+        "electricity", "electricity bill", "eb", "wifi", "broadband", "internet bill",
+        "water bill", "cylinder", "gas", "gas cylinder", "indane", "bharat gas",
+        "hp gas", "dth", "tata sky", "sun direct", "airtel", "jio", "vi", "bsnl",
+        "cable", "cable tv", "postpaid", "prepaid"
+    ],
+
+    # 5. Stationery & Office (Printout, Xerox, Books, Pens, Courier, Office stationery)
     "Stationery & Office": [
         "printout", "print", "xerox", "photocopy", "book", "books", "puthagam",
         "pen", "pens", "pencil", "notebook", "notebooks", "note", "paper", "papers",
-        "courier", "post", "stapler", "binding", "stationery", "chart", "marker",
-        "office supplies", "school supplies"
+        "courier", "post", "speed post", "envelope", "stapler", "file", "chart",
+        "marker", "office supplies", "school supplies", "scanner", "spiral binding",
+        "lamination"
     ],
+
+    # 6. Medical & Healthcare (Medicines, Doctor consultation, Medical tests, Tablets)
     "Medical & Healthcare": [
         "medicine", "medicines", "tablet", "tablets", "marunthu", "maathirai",
         "doctor", "doctor fees", "hospital", "clinic", "syrup", "injection",
-        "test", "blood test", "scan", "pharmacy", "medical", "consultation",
-        "dentist", "drops", "bandage", "ointment"
+        "test", "blood test", "lab test", "scan", "pharmacy", "medical",
+        "consultation", "medical shop", "apollo", "dentist", "drops", "bandage",
+        "ointment", "fever", "cough"
     ],
-    "General & Daily Utilities": [
-        "recharge", "mobile recharge", "current bill", "eb bill", "electricity",
-        "electricity bill", "water bill", "wifi", "broadband", "cylinder", "gas cylinder",
-        "plumber", "repair", "electrician", "rent", "maintenance", "maid",
-        "newspaper", "misc", "miscellaneous", "cash expense"
+
+    # 7. General & Others (Money given to others, Lending, Casual cash spends, Miscellaneous)
+    "General & Others": [
+        "money given", "given to", "lending", "loan", "borrowed", "casual cash",
+        "cash expense", "donation", "charity", "tip", "maid", "laundry", "iron",
+        "dry clean", "newspaper", "barber", "salon", "haircut", "spa", "plumber",
+        "electrician", "carpenter", "repair", "rent", "house rent", "maintenance",
+        "gift", "misc", "miscellaneous", "others"
     ]
 }
 
-# Words to remove when extracting the item description
+# Words to filter out when extracting item name
 FILLER_WORDS = {
-    # English fillers
+    # English
     "i", "bought", "buy", "spent", "spend", "paid", "pay", "gave", "give", "cost",
     "for", "at", "to", "the", "a", "an", "on", "in", "my", "of", "some", "and",
     "rupees", "rupee", "rs", "rs.", "inr", "bucks", "rooba", "roobai", "today", "yesterday",
-    # Tanglish / Tamil action words
+    # Tanglish
     "vanginen", "vaanginen", "vangithen", "potten", "pottan", "paninen", "pannen",
-    "kuduthen", "kuduthan", "aachu", "aayiduchu", "aachu", "irukku", "ku", "la",
-    "nethu", "netru", "kaasu", "panam", "roobai"
+    "kuduthen", "kuduthan", "aachu", "aayiduchu", "irukku", "ku", "la", "nethu",
+    "netru", "kaasu", "panam"
 }
 
 # Payment Mode Keywords
@@ -71,12 +102,6 @@ PAYMENT_KEYWORDS = {
 def extract_amount(text: str) -> Optional[float]:
     """
     Extract monetary amount from spoken text.
-    Handles patterns like:
-    - 'paal 30'
-    - 'petrol 200 rupees'
-    - '50 rs'
-    - 'recharge paninen 299'
-    - 'tablet 150.50'
     """
     # Pattern 1: Number adjacent to currency tokens
     pattern_currency = re.search(
@@ -101,10 +126,9 @@ def extract_amount(text: str) -> Optional[float]:
         except ValueError:
             pass
 
-    # Pattern 2: Any standalone numeric value in the sentence
+    # Pattern 2: Standalone numbers
     numbers = re.findall(r'\b\d+(?:\.\d{1,2})?\b', text)
     if numbers:
-        # Prefer the last number (e.g. "milk 30") or largest reasonable price
         try:
             return float(numbers[-1])
         except ValueError:
@@ -144,69 +168,53 @@ def extract_payment_mode(text: str) -> str:
 
 def classify_category(text: str) -> str:
     """
-    Match spoken words against the 5 predefined expense categories.
-    Falls back to 'General & Daily Utilities' if uncertain.
+    Match spoken words against the 7 defined expense categories.
+    Falls back to 'General & Others' if uncertain.
     """
     text_lower = text.lower()
 
-    # Score each category based on keyword matches
     category_scores = {cat: 0 for cat in storage.VALID_CATEGORIES}
 
     for cat, keywords in CATEGORY_KEYWORDS.items():
         for kw in keywords:
-            # Word boundary matching
             if re.search(rf'\b{re.escape(kw)}\b', text_lower):
-                # Exact or compound match
                 category_scores[cat] += len(kw.split()) + 1
 
     best_category = max(category_scores, key=category_scores.get)
     if category_scores[best_category] > 0:
         return best_category
 
-    return "General & Daily Utilities"
+    return "General & Others"
 
 
 def extract_item_name(text: str, amount: Optional[float], category: str) -> str:
     """
     Clean up numbers, currency symbols, and action verbs to isolate the core item.
     """
-    # Remove amount if present
     cleaned = text
     if amount is not None:
-        # Remove integer or float representation
         amt_str = str(int(amount)) if amount.is_integer() else str(amount)
         cleaned = re.sub(rf'\b{re.escape(amt_str)}\b', '', cleaned)
         cleaned = re.sub(r'\b\d+(?:\.\d+)?\b', '', cleaned)
 
-    # Remove payment keywords
     for keywords in PAYMENT_KEYWORDS.values():
         for kw in keywords:
             cleaned = re.sub(rf'\b{re.escape(kw)}\b', '', cleaned, flags=re.IGNORECASE)
 
-    # Split into words and filter fillers
     words = re.findall(r'\b[a-zA-Z]+\b', cleaned)
     item_tokens = [w for w in words if w.lower() not in FILLER_WORDS]
 
     if item_tokens:
-        raw_name = " ".join(item_tokens).title()
-        return raw_name
+        return " ".join(item_tokens).title()
 
-    # Fallback to category base name
-    if category == "Food & Groceries":
-        return "Groceries"
-    if category == "Fuel & Commute":
-        return "Fuel"
-    if category == "Stationery & Office":
-        return "Stationery"
-    if category == "Medical & Healthcare":
-        return "Medicines"
-    return "General Expense"
+    # Fallback to category name
+    return category
 
 
 def parse_voice_transcript(transcript: str) -> Dict[str, Any]:
     """
     End-to-end NLP parser that takes raw speech transcript and returns
-    structured expense candidate fields.
+    structured expense candidate fields across the 7 categories.
     """
     if not transcript or not transcript.strip():
         return {
@@ -216,19 +224,10 @@ def parse_voice_transcript(transcript: str) -> Dict[str, Any]:
 
     raw_text = transcript.strip()
 
-    # 1. Extract Amount
     amount = extract_amount(raw_text)
-
-    # 2. Extract Category
     category = classify_category(raw_text)
-
-    # 3. Extract Item Name
     item = extract_item_name(raw_text, amount, category)
-
-    # 4. Extract Date
     date_str = extract_date(raw_text)
-
-    # 5. Extract Payment Mode
     payment_mode = extract_payment_mode(raw_text)
 
     return {

@@ -16,11 +16,12 @@ def verify_frontend():
     # Check key element IDs and integrations
     required_strings = [
         "Smart Home Expense Tracker",
-        "chart-category-doughnut",
+        "chart-category-ranking",
         "chart-daily-bars",
         "calendar-grid",
         "modal-add-expense",
         "modal-voice-confirm",
+        "modal-budget-settings",
         "btn-voice-header",
         "cdn.jsdelivr.net/npm/chart.js",
         "tailwindcss.com",
