@@ -1,7 +1,13 @@
 """
-Smart Home Expense Tracker - Storage Engine (Pure Python)
-Handles 7 granular expense categories, monthly income & category budgeting,
-remaining balances & net savings, and CSV persistence with rolling 3-month archival.
+Smart Home Expense Tracker - Storage Engine (Pure Python Standard Library)
+Strictly zero Pandas / zero OpenPyXL - 100% Python 3.14+ compatible.
+Features:
+- 7 Granular Expense Categories
+- Date-Only Schema: id,date,category,item,amount,payment_mode,notes (No time field)
+- Monthly Income & Category Budgeting Engine
+- Remaining Balances & Net Savings Analytics
+- Strict 3-Month Rolling Retention Purge
+- Password-Protected Database Reset
 """
 
 import os
@@ -20,15 +26,15 @@ DATA_DIR = BASE_DIR / "data"
 EXPENSES_CSV = DATA_DIR / "expenses.csv"
 ARCHIVE_CSV = DATA_DIR / "expenses_archive.csv"
 BUDGET_JSON = DATA_DIR / "budget_config.json"
+DISPATCH_TRACKER_JSON = DATA_DIR / "last_dispatched.json"
 
 # Thread safety lock for concurrent file access
 _file_lock = threading.Lock()
 
-# Standard CSV Schema
+# Standard CSV Schema (Strictly Date Only, No Time)
 COLUMNS = [
     "id",
     "date",
-    "time",
     "category",
     "item",
     "amount",
@@ -94,12 +100,12 @@ DEFAULT_BUDGET = {
 def init_storage() -> None:
     """
     Auto-initialize data directory, expenses.csv, and budget_config.json.
-    Ensures correct headers and valid budget defaults exist.
+    Ensures correct schema headers (Date only, no time) exist.
     """
     with _file_lock:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-        # 1. Initialize expenses.csv
+        # 1. Initialize expenses.csv with strict schema
         if not EXPENSES_CSV.exists() or os.path.getsize(EXPENSES_CSV) == 0:
             with open(EXPENSES_CSV, mode="w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
@@ -163,40 +169,42 @@ def get_budget_config() -> Dict[str, Any]:
             return DEFAULT_BUDGET.copy()
 
 
-def save_budget_config(payload: Dict[str, Any]) -> Tuple[bool, Optional[str], Dict[str, Any]]:
+def save_budget_config(payload: Dict[str, Any]) -> Tuple[bool, Optional[str], Optional[Dict[str, Any]]]:
     """
-    Validate and save monthly income and category allocations to data/budget_config.json.
+    Validate and save monthly income and category allocations to budget_config.json.
     """
     if not isinstance(payload, dict):
-        return False, "Payload must be a valid JSON object.", {}
+        return False, "Budget payload must be a JSON object.", None
 
+    # Validate monthly income
     raw_income = payload.get("monthly_income")
     if raw_income is None:
-        return False, "Field 'monthly_income' is required.", {}
+        return False, "Field 'monthly_income' is required.", None
     try:
         monthly_income = float(raw_income)
-        if monthly_income <= 0:
-            return False, "Field 'monthly_income' must be greater than 0.", {}
+        if monthly_income < 0:
+            return False, "Monthly income cannot be negative.", None
         monthly_income = round(monthly_income, 2)
     except (ValueError, TypeError):
-        return False, "Field 'monthly_income' must be a valid numeric amount.", {}
+        return False, "Monthly income must be a valid number.", None
 
-    raw_cats = payload.get("categories", {})
-    if not isinstance(raw_cats, dict):
-        return False, "Field 'categories' must be an object with allocations for each category.", {}
+    # Validate categories map
+    raw_categories = payload.get("categories")
+    if not isinstance(raw_categories, dict):
+        return False, "Field 'categories' must be an object with category budgets.", None
 
     sanitized_cats = {}
     for cat in VALID_CATEGORIES:
-        val = raw_cats.get(cat, 0.0)
+        val = raw_categories.get(cat, 0.0)
         try:
-            amt = float(val)
-            if amt < 0:
-                return False, f"Budget for '{cat}' cannot be negative.", {}
-            sanitized_cats[cat] = round(amt, 2)
+            num = float(val)
+            if num < 0:
+                return False, f"Budget for category '{cat}' cannot be negative.", None
+            sanitized_cats[cat] = round(num, 2)
         except (ValueError, TypeError):
-            sanitized_cats[cat] = 0.0
+            return False, f"Budget for category '{cat}' must be a valid number.", None
 
-    updated_config = {
+    new_config = {
         "monthly_income": monthly_income,
         "categories": sanitized_cats,
         "updated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -205,34 +213,146 @@ def save_budget_config(payload: Dict[str, Any]) -> Tuple[bool, Optional[str], Di
     with _file_lock:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         with open(BUDGET_JSON, mode="w", encoding="utf-8") as f:
-            json.dump(updated_config, f, indent=2)
+            json.dump(new_config, f, indent=2)
 
-    return True, None, updated_config
+    return True, None, new_config
 
 
 # ---------------------------------------------------------------------------
-# Expense Persistence & Filtering
+# Strict 3-Month Rolling Retention Engine
+# ---------------------------------------------------------------------------
+
+def get_retention_cutoff_date(now: Optional[datetime] = None) -> str:
+    """
+    Calculates the strict 3-month retention cutoff date (YYYY-MM-DD).
+    Maintains current calendar month plus the previous 2 months.
+    Example: On February 1st -> records before Dec 1st (Nov or earlier) are purged.
+    """
+    if now is None:
+        now = datetime.now()
+    year = now.year
+    month = now.month
+    
+    # 2 months prior start date
+    month_cutoff = month - 2
+    year_cutoff = year
+    if month_cutoff <= 0:
+        month_cutoff += 12
+        year_cutoff -= 1
+        
+    return f"{year_cutoff:04d}-{month_cutoff:02d}-01"
+
+
+def prune_rolling_history(now: Optional[datetime] = None) -> int:
+    """
+    Purges records older than current month + previous 2 months from expenses.csv,
+    archiving them safely into expenses_archive.csv.
+    """
+    with _file_lock:
+        if not EXPENSES_CSV.exists() or os.path.getsize(EXPENSES_CSV) == 0:
+            return 0
+
+        all_records: List[Dict[str, Any]] = []
+        with open(EXPENSES_CSV, mode="r", newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for r in reader:
+                all_records.append(r)
+
+        if not all_records:
+            return 0
+
+        cutoff_date = get_retention_cutoff_date(now)
+
+        recent: List[Dict[str, Any]] = []
+        older: List[Dict[str, Any]] = []
+
+        for r in all_records:
+            if r.get("date", "") < cutoff_date:
+                older.append(r)
+            else:
+                recent.append(r)
+
+        if older:
+            archive_exists = ARCHIVE_CSV.exists() and os.path.getsize(ARCHIVE_CSV) > 0
+            with open(ARCHIVE_CSV, mode="a", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=COLUMNS, extrasaction="ignore")
+                if not archive_exists:
+                    writer.writeheader()
+                writer.writerows(older)
+
+            with open(EXPENSES_CSV, mode="w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=COLUMNS, extrasaction="ignore")
+                writer.writeheader()
+                writer.writerows(recent)
+
+            return len(older)
+
+        return 0
+
+
+# ---------------------------------------------------------------------------
+# Database Reset (Password-Protected Backend Action)
+# ---------------------------------------------------------------------------
+
+def reset_database() -> Tuple[bool, str]:
+    """
+    Completely wipe all expense records and reset data files to a clean slate.
+    Truncates expenses.csv to header only, deletes archives, and resets budget defaults.
+    """
+    with _file_lock:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+        # 1. Truncate expenses.csv to headers only
+        with open(EXPENSES_CSV, mode="w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(COLUMNS)
+
+        # 2. Remove archive if present
+        if ARCHIVE_CSV.exists():
+            try:
+                ARCHIVE_CSV.unlink()
+            except Exception:
+                pass
+
+        # 3. Reset budget config to pristine defaults
+        with open(BUDGET_JSON, mode="w", encoding="utf-8") as f:
+            json.dump(DEFAULT_BUDGET, f, indent=2)
+
+        # 4. Remove auto-dispatch tracker if present
+        if DISPATCH_TRACKER_JSON.exists():
+            try:
+                DISPATCH_TRACKER_JSON.unlink()
+            except Exception:
+                pass
+
+        return True, "Database successfully reset to pristine empty state."
+
+
+# ---------------------------------------------------------------------------
+# Core Expense CRUD & Aggregation Engine
 # ---------------------------------------------------------------------------
 
 def read_all_expenses() -> List[Dict[str, Any]]:
     """
-    Read all records from expenses.csv using csv.DictReader with parsed types.
+    Thread-safe read of active expenses from data/expenses.csv.
     """
     with _file_lock:
         if not EXPENSES_CSV.exists() or os.path.getsize(EXPENSES_CSV) == 0:
             return []
 
-        records: List[Dict[str, Any]] = []
+        records = []
         try:
             with open(EXPENSES_CSV, mode="r", newline="", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
+                    if not row.get("id") or not row.get("date"):
+                        continue
+
                     try:
                         amt = round(float(row.get("amount", 0.0) or 0.0), 2)
                     except (ValueError, TypeError):
                         amt = 0.0
 
-                    # Map legacy category names if encountered
                     raw_cat = str(row.get("category", "")).strip()
                     norm_cat = CATEGORY_LOOKUP.get(raw_cat.lower(), raw_cat)
                     if norm_cat not in VALID_CATEGORIES:
@@ -241,7 +361,6 @@ def read_all_expenses() -> List[Dict[str, Any]]:
                     records.append({
                         "id": str(row.get("id", "")).strip(),
                         "date": str(row.get("date", "")).strip(),
-                        "time": str(row.get("time", "")).strip(),
                         "category": norm_cat,
                         "item": str(row.get("item", "")).strip(),
                         "amount": amt,
@@ -255,7 +374,8 @@ def read_all_expenses() -> List[Dict[str, Any]]:
 
 def validate_expense_payload(payload: Dict[str, Any]) -> Tuple[bool, Optional[str], Optional[Dict[str, Any]]]:
     """
-    Validate incoming expense payload according to the 7 defined categories.
+    Validate incoming expense payload according to the strict schema.
+    Date format: YYYY-MM-DD. No time field.
     """
     if not isinstance(payload, dict):
         return False, "Payload must be a valid JSON object.", None
@@ -269,22 +389,6 @@ def validate_expense_payload(payload: Dict[str, Any]) -> Tuple[bool, Optional[st
         normalized_date = parsed_date.strftime("%Y-%m-%d")
     except ValueError:
         return False, "Invalid 'date' format. Must be YYYY-MM-DD.", None
-
-    # Validate Time
-    time_str = payload.get("time")
-    if time_str and isinstance(time_str, str) and time_str.strip():
-        try:
-            t = time_str.strip()
-            if len(t) == 5:
-                parsed_time = datetime.strptime(t, "%H:%M")
-                normalized_time = parsed_time.strftime("%H:%M:00")
-            else:
-                parsed_time = datetime.strptime(t, "%H:%M:%S")
-                normalized_time = parsed_time.strftime("%H:%M:%S")
-        except ValueError:
-            return False, "Invalid 'time' format. Must be HH:MM or HH:MM:SS.", None
-    else:
-        normalized_time = datetime.now().strftime("%H:%M:%S")
 
     # Validate Category against the 7 defined buckets
     raw_category = payload.get("category")
@@ -325,7 +429,6 @@ def validate_expense_payload(payload: Dict[str, Any]) -> Tuple[bool, Optional[st
 
     sanitized = {
         "date": normalized_date,
-        "time": normalized_time,
         "category": canonical_category,
         "item": normalized_item,
         "amount": amount,
@@ -336,55 +439,9 @@ def validate_expense_payload(payload: Dict[str, Any]) -> Tuple[bool, Optional[st
     return True, None, sanitized
 
 
-def prune_rolling_history(months: int = 3) -> int:
-    """
-    Archives records older than `months * 30` days into expenses_archive.csv.
-    """
-    with _file_lock:
-        if not EXPENSES_CSV.exists() or os.path.getsize(EXPENSES_CSV) == 0:
-            return 0
-
-        all_records: List[Dict[str, Any]] = []
-        with open(EXPENSES_CSV, mode="r", newline="", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for r in reader:
-                all_records.append(r)
-
-        if not all_records:
-            return 0
-
-        cutoff_date = (datetime.now() - timedelta(days=months * 30)).strftime("%Y-%m-%d")
-
-        recent: List[Dict[str, Any]] = []
-        older: List[Dict[str, Any]] = []
-
-        for r in all_records:
-            if r.get("date", "") < cutoff_date:
-                older.append(r)
-            else:
-                recent.append(r)
-
-        if older:
-            archive_exists = ARCHIVE_CSV.exists() and os.path.getsize(ARCHIVE_CSV) > 0
-            with open(ARCHIVE_CSV, mode="a", newline="", encoding="utf-8") as f:
-                writer = csv.DictWriter(f, fieldnames=COLUMNS, extrasaction="ignore")
-                if not archive_exists:
-                    writer.writeheader()
-                writer.writerows(older)
-
-            with open(EXPENSES_CSV, mode="w", newline="", encoding="utf-8") as f:
-                writer = csv.DictWriter(f, fieldnames=COLUMNS, extrasaction="ignore")
-                writer.writeheader()
-                writer.writerows(recent)
-
-            return len(older)
-
-        return 0
-
-
 def add_expense(payload: Dict[str, Any]) -> Tuple[bool, Optional[str], Optional[Dict[str, Any]]]:
     """
-    Append new expense record safely via csv.DictWriter and prune rolling history.
+    Append new expense record safely via csv.DictWriter and run rolling retention purge.
     """
     is_valid, error_msg, sanitized = validate_expense_payload(payload)
     if not is_valid or sanitized is None:
@@ -406,7 +463,8 @@ def add_expense(payload: Dict[str, Any]) -> Tuple[bool, Optional[str], Optional[
                 writer.writeheader()
             writer.writerow(record)
 
-    prune_rolling_history(months=3)
+    # Automatic 3-month rolling retention prune
+    prune_rolling_history()
     return True, None, record
 
 
@@ -423,8 +481,8 @@ def get_expenses_by_date(date_str: Optional[str] = None, category_filter: Option
         norm_cat = CATEGORY_LOOKUP.get(category_filter.strip().lower(), category_filter.strip())
         filtered = [e for e in filtered if e["category"] == norm_cat]
 
-    # Sort descending by date and time
-    filtered.sort(key=lambda x: (x.get("date", ""), x.get("time", "")), reverse=True)
+    # Sort descending by date and ID
+    filtered.sort(key=lambda x: (x.get("date", ""), x.get("id", "")), reverse=True)
     daily_total = round(sum(e["amount"] for e in filtered), 2)
 
     return {
@@ -438,7 +496,7 @@ def get_expenses_by_date(date_str: Optional[str] = None, category_filter: Option
 
 def get_monthly_summary(year: int, month: int) -> Dict[str, Any]:
     """
-    Comprehensive monthly summary including:
+    Comprehensive monthly summary:
     - Total monthly spend & transaction count
     - Monthly Income, Net Savings & Savings Rate %
     - Daily spend totals array & recommended daily burn rate
@@ -520,13 +578,13 @@ def get_monthly_summary(year: int, month: int) -> Dict[str, Any]:
         "month": month,
         "month_label": datetime(year, month, 1).strftime("%B %Y"),
         "days_in_month": days_in_month,
-        "monthly_income": monthly_income,
         "total_spending": total_spending,
+        "transaction_count": len(month_expenses),
+        "monthly_income": monthly_income,
         "total_budget_allocated": total_allocated,
         "net_savings": net_savings,
         "savings_rate": savings_rate,
         "daily_budget_target": daily_budget_target,
-        "transaction_count": len(month_expenses),
         "daily_totals": daily_totals,
         "category_breakdown": category_breakdown,
         "category_percentages": category_percentages,
@@ -536,58 +594,29 @@ def get_monthly_summary(year: int, month: int) -> Dict[str, Any]:
 
 def get_rolling_3_months_summary() -> Dict[str, Any]:
     """
-    High-level summary of the last 3 months (90 days).
+    Get rolling 3-month aggregated metrics.
     """
     all_expenses = read_all_expenses()
-
     end_date = datetime.now()
     start_date = end_date - timedelta(days=90)
     start_str = start_date.strftime("%Y-%m-%d")
     end_str = end_date.strftime("%Y-%m-%d")
 
-    window_expenses = [e for e in all_expenses if start_str <= e["date"] <= end_str]
-    total_expense = round(sum(e["amount"] for e in window_expenses), 2)
+    rolling_expenses = [e for e in all_expenses if start_str <= e["date"] <= end_str]
+    total_spent = round(sum(e["amount"] for e in rolling_expenses), 2)
+    daily_avg = round(total_spent / 90, 2)
 
-    total_days = 90
-    daily_average = round(total_expense / total_days, 2) if total_days > 0 else 0.0
-
-    category_distribution: Dict[str, float] = {cat: 0.0 for cat in VALID_CATEGORIES}
-    category_percentages: Dict[str, float] = {cat: 0.0 for cat in VALID_CATEGORIES}
-
-    for e in window_expenses:
+    cat_counts: Dict[str, float] = {cat: 0.0 for cat in VALID_CATEGORIES}
+    for e in rolling_expenses:
         cat = e.get("category", "")
-        if cat in category_distribution:
-            category_distribution[cat] += e["amount"]
-
-    for cat in VALID_CATEGORIES:
-        category_distribution[cat] = round(category_distribution[cat], 2)
-        if total_expense > 0:
-            category_percentages[cat] = round((category_distribution[cat] / total_expense) * 100, 1)
-
-    month_map: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"total": 0.0, "count": 0})
-    for e in window_expenses:
-        ym = e["date"][:7]
-        month_map[ym]["total"] += e["amount"]
-        month_map[ym]["count"] += 1
-
-    monthly_trend: List[Dict[str, Any]] = []
-    for ym in sorted(month_map.keys()):
-        monthly_trend.append({
-            "month": ym,
-            "total": round(month_map[ym]["total"], 2),
-            "count": month_map[ym]["count"]
-        })
+        if cat in cat_counts:
+            cat_counts[cat] += e["amount"]
 
     return {
-        "period": {
-            "start_date": start_str,
-            "end_date": end_str,
-            "total_days": total_days
-        },
-        "total_expense": total_expense,
-        "daily_average": daily_average,
-        "transaction_count": len(window_expenses),
-        "category_distribution": category_distribution,
-        "category_percentages": category_percentages,
-        "monthly_trend": monthly_trend
+        "start_date": start_str,
+        "end_date": end_str,
+        "total_expense": total_spent,
+        "daily_average": daily_avg,
+        "transaction_count": len(rolling_expenses),
+        "category_distribution": {k: round(v, 2) for k, v in cat_counts.items()}
     }

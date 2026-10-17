@@ -235,7 +235,6 @@ def parse_voice_transcript(transcript: str) -> Dict[str, Any]:
         "transcript": raw_text,
         "data": {
             "date": date_str,
-            "time": datetime.now().strftime("%H:%M:%S"),
             "category": category,
             "item": item,
             "amount": amount if amount is not None else 0.0,

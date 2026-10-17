@@ -1,409 +1,309 @@
 /**
- * Smart Home Expense Tracker - Client-side Application Logic
- * Phase 4.5: 7-Category Architecture, Budget Planner, Remaining Balances,
- * Net Savings Engine, and Interactive Analytics.
+ * Smart Home Expense Tracker - Frontend Engine
+ * Features:
+ * - 7-Category Budgeting & Savings Tracker (Allocated, Spent, Remaining)
+ * - Strict Date-Only Expense Management (No time field)
+ * - Month-End Email Report Dispatch to sarveshsantosh2007s@gmail.com
+ * - Password-Protected Database Reset
+ * - Chart.js Spending Analytics (Daily Burn Rate & Category Ranking)
+ * - Interactive Monthly Calendar
+ * - Browser-Native Web Speech API with Tanglish & English Extraction
  */
+
+// Global Configuration for the 7 Granular Expense Buckets
+const CATEGORY_CONFIG = {
+    "Food": {
+        color: "#f59e0b",
+        bgClass: "bg-amber-500",
+        lightBgClass: "bg-amber-50",
+        borderClass: "border-amber-200",
+        textColor: "text-amber-700",
+        icon: "fa-utensils",
+        desc: "Restaurant, Tea, Swiggy"
+    },
+    "Groceries": {
+        color: "#10b981",
+        bgClass: "bg-emerald-500",
+        lightBgClass: "bg-emerald-50",
+        borderClass: "border-emerald-200",
+        textColor: "text-emerald-700",
+        icon: "fa-basket-shopping",
+        desc: "Provisions, Veggies, Milk"
+    },
+    "Bike & Car": {
+        color: "#3b82f6",
+        bgClass: "bg-blue-500",
+        lightBgClass: "bg-blue-50",
+        borderClass: "border-blue-200",
+        textColor: "text-blue-700",
+        icon: "fa-motorcycle",
+        desc: "Petrol, Service, Puncture"
+    },
+    "Bills & Utilities": {
+        color: "#8b5cf6",
+        bgClass: "bg-purple-500",
+        lightBgClass: "bg-purple-50",
+        borderClass: "border-purple-200",
+        textColor: "text-purple-700",
+        icon: "fa-bolt",
+        desc: "EB Bill, Wi-Fi, Recharge"
+    },
+    "Stationery & Office": {
+        color: "#06b6d4",
+        bgClass: "bg-cyan-500",
+        lightBgClass: "bg-cyan-50",
+        borderClass: "border-cyan-200",
+        textColor: "text-cyan-700",
+        icon: "fa-print",
+        desc: "Printout, Xerox, Books"
+    },
+    "Medical & Healthcare": {
+        color: "#ef4444",
+        bgClass: "bg-rose-500",
+        lightBgClass: "bg-rose-50",
+        borderClass: "border-rose-200",
+        textColor: "text-rose-700",
+        icon: "fa-heart-pulse",
+        desc: "Medicines, Consultation"
+    },
+    "General & Others": {
+        color: "#64748b",
+        bgClass: "bg-slate-500",
+        lightBgClass: "bg-slate-50",
+        borderClass: "border-slate-200",
+        textColor: "text-slate-700",
+        icon: "fa-coins",
+        desc: "Lending, Cash, Misc"
+    }
+};
+
+const MONTH_NAMES = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+];
 
 // Application State
 const state = {
     currentYear: new Date().getFullYear(),
-    currentMonth: new Date().getMonth() + 1, // 1-12
-    selectedDate: formatDate(new Date()),
-    selectedCategory: null, // Active category filter
-    monthlyData: null,
+    currentMonth: new Date().getMonth() + 1,
+    selectedDate: new Date().toISOString().split("T")[0],
+    categoryFilter: null,
+    monthlySummary: null,
     budgetConfig: null,
-    trendChart: null,
-    rankingChart: null,
-    isRecording: false,
-    recognition: null,
-    lastTranscript: ""
+    chartDaily: null,
+    chartCategoryRanking: null,
+    speechRecognition: null,
+    isListening: false,
+    audioCtx: null
 };
 
-// 7 Granular Category Configuration & Theme Accents
-const CATEGORY_CONFIG = {
-    "Food": {
-        icon: "fa-solid fa-utensils",
-        bg: "bg-amber-100",
-        text: "text-amber-700",
-        border: "border-amber-200",
-        color: "#f59e0b"
-    },
-    "Groceries": {
-        icon: "fa-solid fa-basket-shopping",
-        bg: "bg-emerald-100",
-        text: "text-emerald-700",
-        border: "border-emerald-200",
-        color: "#10b981"
-    },
-    "Bike & Car": {
-        icon: "fa-solid fa-motorcycle",
-        bg: "bg-blue-100",
-        text: "text-blue-700",
-        border: "border-blue-200",
-        color: "#3b82f6"
-    },
-    "Bills & Utilities": {
-        icon: "fa-solid fa-bolt",
-        bg: "bg-purple-100",
-        text: "text-purple-700",
-        border: "border-purple-200",
-        color: "#8b5cf6"
-    },
-    "Stationery & Office": {
-        icon: "fa-solid fa-pen-ruler",
-        bg: "bg-cyan-100",
-        text: "text-cyan-700",
-        border: "border-cyan-200",
-        color: "#06b6d4"
-    },
-    "Medical & Healthcare": {
-        icon: "fa-solid fa-heart-pulse",
-        bg: "bg-rose-100",
-        text: "text-rose-700",
-        border: "border-rose-200",
-        color: "#f43f5e"
-    },
-    "General & Others": {
-        icon: "fa-solid fa-coins",
-        bg: "bg-slate-100",
-        text: "text-slate-700",
-        border: "border-slate-200",
-        color: "#64748b"
-    }
-};
-
-// Payment Mode Badges
-const PAYMENT_BADGES = {
-    "UPI": { bg: "bg-indigo-50", text: "text-indigo-700", border: "border-indigo-200", icon: "fa-solid fa-mobile-screen" },
-    "Cash": { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", icon: "fa-solid fa-money-bill-1" },
-    "Credit Card": { bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200", icon: "fa-solid fa-credit-card" },
-    "Debit Card": { bg: "bg-cyan-50", text: "text-cyan-700", border: "border-cyan-200", icon: "fa-solid fa-credit-card" },
-    "Net Banking": { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", icon: "fa-solid fa-building-columns" }
-};
-
-// =============================================================================
-// Initialization
-// =============================================================================
-
-document.addEventListener('DOMContentLoaded', () => {
-    initEventListeners();
-    initSpeechRecognition();
-    loadDashboardData();
+// Utilities
+const formatCurrency = (amount) => "₹" + Number(amount || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
 });
 
-function initEventListeners() {
-    // Calendar Navigation
-    document.getElementById('btn-prev-month').addEventListener('click', () => changeMonth(-1));
-    document.getElementById('btn-next-month').addEventListener('click', () => changeMonth(1));
-    document.getElementById('btn-current-month').addEventListener('click', goToCurrentMonth);
+const formatCompactCurrency = (amount) => {
+    const val = Number(amount || 0);
+    if (val >= 1000) return `₹${(val / 1000).toFixed(1)}k`;
+    return `₹${Math.round(val)}`;
+};
 
-    // Budget Planner Modal Triggers
-    const budgetModal = document.getElementById('modal-budget-settings');
-    document.getElementById('btn-open-budget-modal').addEventListener('click', openBudgetModal);
-    document.getElementById('btn-close-budget-modal').addEventListener('click', closeBudgetModal);
-    document.getElementById('btn-cancel-budget-modal').addEventListener('click', closeBudgetModal);
-    document.getElementById('form-budget-settings').addEventListener('submit', handleBudgetSubmit);
-    initBudgetLiveCalculator();
-
-    // Manual Modal Triggers
-    const addModal = document.getElementById('modal-add-expense');
-    document.getElementById('btn-open-add-modal').addEventListener('click', () => openAddModal());
-    document.getElementById('btn-add-for-selected-date').addEventListener('click', () => openAddModal(state.selectedDate));
-    document.getElementById('btn-empty-add').addEventListener('click', () => openAddModal(state.selectedDate));
-    document.getElementById('btn-close-modal').addEventListener('click', closeAddModal);
-    document.getElementById('btn-cancel-modal').addEventListener('click', closeAddModal);
-    document.getElementById('form-add-expense').addEventListener('submit', handleExpenseSubmit);
-
-    // Voice Assistant Triggers
-    document.getElementById('btn-voice-header').addEventListener('click', toggleVoiceRecognition);
-    document.getElementById('btn-voice-fab').addEventListener('click', toggleVoiceRecognition);
-    document.getElementById('btn-empty-voice').addEventListener('click', toggleVoiceRecognition);
-    document.getElementById('btn-stop-voice').addEventListener('click', stopVoiceRecognition);
-    document.getElementById('btn-cancel-voice').addEventListener('click', cancelVoiceRecognition);
-
-    // Voice Confirmation Modal Handlers
-    const confirmModal = document.getElementById('modal-voice-confirm');
-    document.getElementById('btn-close-voice-confirm').addEventListener('click', closeVoiceConfirmModal);
-    document.getElementById('btn-cancel-voice-confirm').addEventListener('click', closeVoiceConfirmModal);
-    document.getElementById('form-voice-confirm').addEventListener('submit', handleVoiceConfirmSubmit);
-
-    // Clear Category Filter
-    document.getElementById('btn-clear-category-filter').addEventListener('click', clearCategoryFilter);
-
-    // Export Dropdown
-    const exportBtn = document.getElementById('btn-export-menu');
-    const exportMenu = document.getElementById('export-menu');
-    exportBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        exportMenu.classList.toggle('hidden');
+const formatDateReadable = (dateStr) => {
+    if (!dateStr) return "";
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const dObj = new Date(y, m - 1, d);
+    return dObj.toLocaleDateString("en-IN", {
+        weekday: "long",
+        day: "numeric",
+        month: "short",
+        year: "numeric"
     });
-    document.addEventListener('click', () => {
-        if (!exportMenu.classList.contains('hidden')) {
-            exportMenu.classList.add('hidden');
+};
+
+function playAudioChime(freq = 600, duration = 0.15) {
+    try {
+        if (!state.audioCtx) {
+            state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
-    });
-
-    // Close Modals on ESC key or backdrop click
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            closeAddModal();
-            closeVoiceConfirmModal();
-            closeBudgetModal();
-            cancelVoiceRecognition();
+        if (state.audioCtx.state === "suspended") {
+            state.audioCtx.resume();
         }
-    });
-    addModal.addEventListener('click', (e) => {
-        if (e.target === addModal) closeAddModal();
-    });
-    confirmModal.addEventListener('click', (e) => {
-        if (e.target === confirmModal) closeVoiceConfirmModal();
-    });
-    budgetModal.addEventListener('click', (e) => {
-        if (e.target === budgetModal) closeBudgetModal();
-    });
-}
-
-// =============================================================================
-// Core Dashboard Data Orchestrator
-// =============================================================================
-
-async function loadDashboardData() {
-    await Promise.all([
-        fetchMonthlySummary(state.currentYear, state.currentMonth),
-        fetchTodayExpense(),
-        fetchExpensesList()
-    ]);
-}
-
-async function fetchMonthlySummary(year, month) {
-    try {
-        const response = await fetch(`/api/summary/monthly?year=${year}&month=${month}`);
-        if (!response.ok) throw new Error('Failed to load monthly summary');
-        const data = await response.json();
-        state.monthlyData = data;
-
-        // Header & Calendar labels
-        updateMonthBadge(data.month_label);
-        document.getElementById('calendar-title').textContent = data.month_label;
-
-        // 1. Top Stat Cards
-        renderTopStatCards(data);
-
-        // 2. Category Highlights & Remaining Balances
-        renderCategoryCards(data.category_budgets);
-
-        // 3. Calendar Grid
-        renderCalendar(year, month, data.daily_totals);
-
-        // 4. Analytics Visualizations (Burn rate & Category ranking)
-        renderAnalyticsCharts(data);
-    } catch (error) {
-        console.error('Error fetching monthly summary:', error);
-        showToast('Error loading monthly summary', 'error');
+        const osc = state.audioCtx.createOscillator();
+        const gain = state.audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, state.audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.12, state.audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, state.audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(state.audioCtx.destination);
+        osc.start();
+        osc.stop(state.audioCtx.currentTime + duration);
+    } catch (e) {
+        // AudioContext fallback
     }
 }
 
-async function fetchTodayExpense() {
+// ---------------------------------------------------------------------------
+// Core Data Fetching
+// ---------------------------------------------------------------------------
+
+async function fetchMonthlySummary() {
     try {
-        const todayStr = formatDate(new Date());
-        const response = await fetch(`/api/expenses?date=${todayStr}`);
-        if (!response.ok) return;
-        const data = await response.json();
-        document.getElementById('stat-today-total').textContent = formatCurrency(data.daily_total);
-    } catch (error) {
-        console.error('Error fetching today expense:', error);
+        const res = await fetch(`/api/summary/monthly?year=${state.currentYear}&month=${state.currentMonth}`);
+        const data = await res.json();
+        if (data.status === "success") {
+            state.monthlySummary = data;
+            renderTopStatCards(data);
+            renderCategoryBudgetCards(data.category_budgets || {});
+            renderCalendar(data.daily_totals || []);
+            renderEnhancedCharts(data);
+        }
+    } catch (err) {
+        console.error("Error loading monthly summary:", err);
     }
 }
 
-async function fetchExpensesList() {
-    const titleEl = document.getElementById('selected-date-title');
-    const totalEl = document.getElementById('selected-date-total');
-    const countEl = document.getElementById('selected-date-count');
-    const listContainer = document.getElementById('daily-expenses-list');
-    const emptyState = document.getElementById('daily-empty-state');
-    const filterBadge = document.getElementById('category-filter-badge');
-    const filterName = document.getElementById('category-filter-name');
-    const clearBtn = document.getElementById('btn-clear-category-filter');
-    const panelBadgeTitle = document.getElementById('panel-badge-title');
-
-    // UI Title & Filter State
-    if (state.selectedCategory) {
-        panelBadgeTitle.textContent = "Filtered by Category";
-        filterBadge.classList.remove('hidden');
-        filterName.textContent = state.selectedCategory;
-        clearBtn.classList.remove('hidden');
-        titleEl.textContent = `${state.selectedCategory} Expenses`;
-    } else {
-        panelBadgeTitle.textContent = "Selected Date";
-        filterBadge.classList.add('hidden');
-        clearBtn.classList.add('hidden');
-        const dateObj = new Date(state.selectedDate + "T00:00:00");
-        titleEl.textContent = dateObj.toLocaleDateString('default', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
-    }
-
-    listContainer.innerHTML = `
-        <div class="py-8 text-center text-slate-400">
-            <i class="fa-solid fa-circle-notch fa-spin text-xl text-brand-600 mb-2"></i>
-            <p class="text-xs">Loading expenses...</p>
-        </div>
-    `;
-    emptyState.classList.add('hidden');
-
+async function fetchSelectedExpenses() {
     try {
-        let url = '/api/expenses?';
-        if (state.selectedCategory) {
-            url += `category=${encodeURIComponent(state.selectedCategory)}`;
-        } else {
+        let url = `/api/expenses?`;
+        if (state.categoryFilter) {
+            url += `category=${encodeURIComponent(state.categoryFilter)}`;
+        } else if (state.selectedDate) {
             url += `date=${encodeURIComponent(state.selectedDate)}`;
         }
 
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Failed to fetch expenses');
-        const data = await response.json();
-
-        totalEl.textContent = formatCurrency(data.daily_total);
-        countEl.textContent = `(${data.count} item${data.count === 1 ? '' : 's'})`;
-
-        if (!data.expenses || data.expenses.length === 0) {
-            listContainer.innerHTML = '';
-            emptyState.classList.remove('hidden');
-            return;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.status === "success") {
+            renderExpensesList(data.expenses || [], data.daily_total || 0, data.count || 0);
         }
-
-        emptyState.classList.add('hidden');
-        listContainer.innerHTML = data.expenses.map(exp => createExpenseCard(exp)).join('');
-    } catch (error) {
-        console.error('Error loading expenses list:', error);
-        listContainer.innerHTML = `<div class="p-4 text-xs text-rose-600 bg-rose-50 rounded-xl">Error loading expenses.</div>`;
+    } catch (err) {
+        console.error("Error fetching filtered expenses:", err);
     }
 }
 
-function clearCategoryFilter() {
-    state.selectedCategory = null;
-    document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active-filter'));
-    fetchExpensesList();
-}
+// ---------------------------------------------------------------------------
+// Render Dashboard Cards & Progress Meters
+// ---------------------------------------------------------------------------
 
-// =============================================================================
-// Top Stat Cards & Budget Highlights Renderer
-// =============================================================================
+function renderTopStatCards(summary) {
+    const monthBadge = document.getElementById("current-month-badge");
+    if (monthBadge) {
+        monthBadge.textContent = `${MONTH_NAMES[state.currentMonth - 1].slice(0, 3)} ${state.currentYear}`;
+    }
 
-function renderTopStatCards(data) {
-    // Card 1: Month Spend
-    document.getElementById('stat-month-total').textContent = formatCurrency(data.total_spending);
-    document.getElementById('stat-month-transactions').textContent = `${data.transaction_count} transaction${data.transaction_count === 1 ? '' : 's'}`;
+    // 1. Total Spend
+    document.getElementById("stat-month-total").textContent = formatCurrency(summary.total_spending);
+    document.getElementById("stat-month-transactions").textContent = `${summary.transaction_count} transactions`;
 
-    // Card 2: Income & Allocated Budget
-    document.getElementById('stat-monthly-income').textContent = formatCurrency(data.monthly_income);
-    document.getElementById('stat-budget-allocated').textContent = formatCurrency(data.total_budget_allocated);
+    // 2. Monthly Income & Allocation
+    const income = summary.monthly_income || 0;
+    document.getElementById("stat-monthly-income").textContent = formatCurrency(income);
+    document.getElementById("stat-budget-allocated").textContent = formatCurrency(summary.total_budget_allocated || 0);
 
-    // Card 3: Net Savings & Savings Rate Meter
-    const savingsEl = document.getElementById('stat-net-savings');
-    const badgeEl = document.getElementById('stat-savings-rate-badge');
-    const barEl = document.getElementById('stat-savings-bar');
+    // 3. Net Savings & Meter
+    const netSavings = summary.net_savings ?? (income - summary.total_spending);
+    const savingsEl = document.getElementById("stat-net-savings");
+    savingsEl.textContent = formatCurrency(netSavings);
 
-    savingsEl.textContent = formatCurrency(data.net_savings);
+    const savingsRate = summary.savings_rate ?? (income > 0 ? (netSavings / income) * 100 : 0);
+    const savingsRateBadge = document.getElementById("stat-savings-rate-badge");
+    const savingsBar = document.getElementById("stat-savings-bar");
 
-    if (data.net_savings >= 0) {
-        savingsEl.className = 'text-2xl font-extrabold text-emerald-600 tracking-tight';
-        badgeEl.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800';
-        badgeEl.textContent = `${data.savings_rate}% Saved`;
-        barEl.className = 'bg-emerald-500 h-full rounded-full transition-all duration-500';
-        barEl.style.width = `${Math.min(Math.max(data.savings_rate, 0), 100)}%`;
+    if (netSavings >= 0) {
+        savingsEl.className = "text-2xl font-extrabold text-emerald-600 tracking-tight";
+        savingsRateBadge.className = "text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800";
+        savingsRateBadge.textContent = `${Math.max(0, savingsRate).toFixed(1)}% Saved`;
+        savingsBar.className = "bg-emerald-500 h-full rounded-full transition-all duration-500";
+        savingsBar.style.width = `${Math.min(100, Math.max(0, savingsRate))}%`;
     } else {
-        savingsEl.className = 'text-2xl font-extrabold text-rose-600 tracking-tight';
-        badgeEl.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800';
-        badgeEl.textContent = `Deficit!`;
-        barEl.className = 'bg-rose-500 h-full rounded-full transition-all duration-500';
-        barEl.style.width = '100%';
+        savingsEl.className = "text-2xl font-extrabold text-rose-600 tracking-tight";
+        savingsRateBadge.className = "text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800";
+        savingsRateBadge.textContent = `Overspent by ${formatCurrency(Math.abs(netSavings))}`;
+        savingsBar.className = "bg-rose-500 h-full rounded-full transition-all duration-500";
+        savingsBar.style.width = "100%";
     }
 
-    // Card 4: Daily Burn Rate vs Target
-    document.getElementById('stat-daily-target').textContent = `${formatCurrency(data.daily_budget_target)} / day`;
-    const burnBadge = document.getElementById('stat-daily-status-badge');
-    const todayTotal = parseFloat(document.getElementById('stat-today-total').textContent.replace(/[^\d.-]/g, '')) || 0.0;
+    // 4. Daily Burn Rate vs Target
+    const todayStr = new Date().toISOString().split("T")[0];
+    const todayEntry = (summary.daily_totals || []).find(d => d.date === todayStr);
+    const todaySpent = todayEntry ? todayEntry.total : 0;
+    const dailyTarget = summary.daily_budget_target || (income / (summary.days_in_month || 30));
 
-    if (todayTotal <= data.daily_budget_target) {
-        burnBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800';
-        burnBadge.textContent = 'Within Target';
+    document.getElementById("stat-today-total").textContent = formatCurrency(todaySpent);
+    document.getElementById("stat-daily-target").textContent = `${formatCurrency(dailyTarget)} / day`;
+
+    const dailyBadge = document.getElementById("stat-daily-status-badge");
+    if (todaySpent > dailyTarget && dailyTarget > 0) {
+        dailyBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700";
+        dailyBadge.textContent = "Over Target";
     } else {
-        burnBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800';
-        burnBadge.textContent = 'High Burn';
+        dailyBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700";
+        dailyBadge.textContent = "Within Target";
     }
 }
 
-function renderCategoryCards(categoryBudgets) {
-    const container = document.getElementById('category-cards-container');
-    if (!container || !categoryBudgets) return;
+function renderCategoryBudgetCards(categoryBudgets) {
+    const container = document.getElementById("category-cards-container");
+    container.innerHTML = "";
 
-    container.innerHTML = '';
+    const categories = Object.keys(CATEGORY_CONFIG);
 
-    Object.keys(CATEGORY_CONFIG).forEach(cat => {
-        const cfg = CATEGORY_CONFIG[cat];
-        const budgetInfo = categoryBudgets[cat] || {
-            spent: 0.0,
-            allocated: 0.0,
-            remaining: 0.0,
-            pct_used: 0.0,
-            is_over: false
-        };
+    categories.forEach(catName => {
+        const cfg = CATEGORY_CONFIG[catName];
+        const data = categoryBudgets[catName] || { spent: 0, allocated: 0, remaining: 0, pct_used: 0, is_over: false };
 
-        const isOver = budgetInfo.is_over;
-        const pctUsed = Math.min(budgetInfo.pct_used, 100);
-        const isActive = (state.selectedCategory === cat);
-
-        // Progress bar color based on percentage used
-        let barColor = 'bg-emerald-500';
-        if (pctUsed >= 90 || isOver) {
-            barColor = 'bg-rose-500';
-        } else if (pctUsed >= 75) {
-            barColor = 'bg-amber-500';
-        }
-
-        const card = document.createElement('div');
-        card.className = `category-card bg-white rounded-xl border p-3.5 shadow-sm transition-all ${
-            isActive ? 'active-filter' : 'border-slate-200/90'
+        const card = document.createElement("div");
+        const isActive = state.categoryFilter === catName;
+        card.className = `category-card bg-white rounded-xl border p-3.5 shadow-sm hover:shadow transition-all cursor-pointer relative overflow-hidden ${
+            isActive ? "border-brand-600 ring-2 ring-brand-500/20" : "border-slate-200/80"
         }`;
-        card.id = `cat-card-${cat}`;
+
+        let progressColor = "bg-emerald-500";
+        let statusBadge = "";
+        if (data.is_over) {
+            progressColor = "bg-rose-500";
+            statusBadge = `<span class="text-[9px] font-extrabold text-rose-600 uppercase">Over!</span>`;
+        } else if (data.pct_used >= 75) {
+            progressColor = "bg-amber-500";
+        }
+
+        const cappedPct = Math.min(100, Math.max(0, data.pct_used));
 
         card.innerHTML = `
-            <div class="flex items-center space-x-2.5 mb-2">
-                <div class="h-8 w-8 rounded-lg ${cfg.bg} ${cfg.text} flex items-center justify-center text-xs shadow-sm flex-shrink-0">
-                    <i class="${cfg.icon}"></i>
+            <div class="flex items-center justify-between mb-2">
+                <div class="h-7 w-7 rounded-lg ${cfg.lightBgClass} ${cfg.textColor} flex items-center justify-center text-xs">
+                    <i class="fa-solid ${cfg.icon}"></i>
                 </div>
-                <div class="truncate">
-                    <h4 class="text-xs font-bold text-slate-800 truncate">${escapeHtml(cat)}</h4>
-                    <span class="text-[10px] text-slate-400 block">Bud: ${formatCurrencyCompact(budgetInfo.allocated)}</span>
+                ${statusBadge}
+            </div>
+            <div class="space-y-0.5">
+                <h4 class="text-xs font-bold text-slate-800 truncate">${catName}</h4>
+                <div class="text-[11px] text-slate-400 font-medium truncate">
+                    Bud: ${formatCompactCurrency(data.allocated)}
                 </div>
             </div>
-
-            <!-- Spent Amount -->
-            <div class="flex items-baseline justify-between mt-1">
-                <span class="text-base font-extrabold text-slate-900">${formatCurrency(budgetInfo.spent)}</span>
-                <span class="text-[10px] font-bold ${isOver ? 'text-rose-600' : 'text-slate-500'}">
-                    ${isOver ? `-${formatCurrencyCompact(Math.abs(budgetInfo.remaining))} over` : `${formatCurrencyCompact(budgetInfo.remaining)} left`}
+            <div class="mt-2.5 flex items-baseline justify-between">
+                <span class="text-sm font-extrabold text-slate-900">${formatCurrency(data.spent)}</span>
+                <span class="text-[10px] ${data.remaining < 0 ? 'text-rose-600 font-bold' : 'text-slate-500'}">
+                    ${data.remaining >= 0 ? `${formatCompactCurrency(data.remaining)} left` : `-${formatCompactCurrency(Math.abs(data.remaining))}`}
                 </span>
             </div>
-
-            <!-- Progress Bar -->
             <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
-                <div class="${barColor} h-full rounded-full transition-all duration-500" style="width: ${pctUsed}%"></div>
+                <div class="${progressColor} h-full rounded-full transition-all duration-300" style="width: ${cappedPct}%"></div>
             </div>
-
-            <div class="flex items-center justify-between text-[10px] text-slate-400 mt-1">
-                <span>${budgetInfo.pct_used.toFixed(0)}% used</span>
-                <span class="text-[9px] hover:text-brand-600 font-medium">Filter &rarr;</span>
+            <div class="mt-1.5 flex items-center justify-between text-[10px] text-slate-400">
+                <span>${data.pct_used.toFixed(0)}% used</span>
+                <span class="text-brand-600 font-semibold hover:underline">${isActive ? 'Active' : 'Filter →'}</span>
             </div>
         `;
 
-        card.addEventListener('click', () => {
-            if (state.selectedCategory === cat) {
+        card.addEventListener("click", () => {
+            if (state.categoryFilter === catName) {
                 clearCategoryFilter();
             } else {
-                state.selectedCategory = cat;
-                document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active-filter'));
-                card.classList.add('active-filter');
-                fetchExpensesList();
+                setCategoryFilter(catName);
             }
         });
 
@@ -411,840 +311,738 @@ function renderCategoryCards(categoryBudgets) {
     });
 }
 
-// =============================================================================
-// Enhanced Analytics Visualizations (Chart.js)
-// =============================================================================
+// ---------------------------------------------------------------------------
+// Enhanced Chart.js Spending Analytics
+// ---------------------------------------------------------------------------
 
-function renderAnalyticsCharts(data) {
-    renderDailyTrendChart(data.daily_totals, data.days_in_month, data.daily_budget_target, data.month_label);
-    renderCategoryRankingChart(data.category_breakdown);
-}
+function renderEnhancedCharts(summary) {
+    const dailyTotals = summary.daily_totals || [];
+    const daysInMonth = summary.days_in_month || 31;
+    const dailyBurnTarget = summary.daily_budget_target || 0;
 
-function renderDailyTrendChart(dailyTotals, daysInMonth, dailyTarget, monthLabel) {
-    const ctx = document.getElementById('chart-daily-bars');
-    if (!ctx) return;
+    // 1. Interactive Daily Spend vs Recommended Burn Rate Line
+    const dailyLabels = [];
+    const dailyValues = [];
+    const dailyTargetLine = [];
 
-    const dailyMap = {};
-    if (Array.isArray(dailyTotals)) {
-        dailyTotals.forEach(item => {
-            const dayNum = parseInt(item.date.split('-')[2], 10);
-            dailyMap[dayNum] = item.total;
-        });
-    }
-
-    const labels = [];
-    const spendValues = [];
-    const targetValues = [];
+    const dateMap = {};
+    dailyTotals.forEach(d => { dateMap[d.date] = d.total; });
 
     for (let day = 1; day <= daysInMonth; day++) {
-        labels.push(day);
-        spendValues.push(dailyMap[day] || 0.0);
-        targetValues.push(dailyTarget);
+        dailyLabels.push(day);
+        const dayStr = `${state.currentYear}-${String(state.currentMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        dailyValues.push(dateMap[dayStr] || 0);
+        dailyTargetLine.push(dailyBurnTarget);
     }
 
-    if (state.trendChart) {
-        state.trendChart.destroy();
-    }
+    const ctxDaily = document.getElementById("chart-daily-bars");
+    if (ctxDaily) {
+        if (state.chartDaily) state.chartDaily.destroy();
 
-    state.trendChart = new Chart(ctx, {
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    type: 'bar',
-                    label: 'Spent (₹)',
-                    data: spendValues,
-                    backgroundColor: '#6366f1',
-                    borderRadius: 4,
-                    hoverBackgroundColor: '#4f46e5',
-                    order: 2
-                },
-                {
-                    type: 'line',
-                    label: 'Target Burn Rate',
-                    data: targetValues,
-                    borderColor: '#f43f5e',
-                    borderWidth: 2,
-                    borderDash: [5, 4],
-                    pointRadius: 0,
-                    fill: false,
-                    order: 1
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        title: (items) => `Day ${items[0].label} (${monthLabel})`,
-                        label: (item) => {
-                            if (item.dataset.type === 'line') {
-                                return ` Target Rate: ₹${item.parsed.y.toFixed(2)}`;
-                            }
-                            return ` Actual Spent: ₹${item.parsed.y.toFixed(2)}`;
+        state.chartDaily = new Chart(ctxDaily.getContext("2d"), {
+            type: "bar",
+            data: {
+                labels: dailyLabels,
+                datasets: [
+                    {
+                        label: "Daily Spend",
+                        data: dailyValues,
+                        backgroundColor: "#6366f1",
+                        hoverBackgroundColor: "#4f46e5",
+                        borderRadius: 4,
+                        barPercentage: 0.65,
+                        order: 2
+                    },
+                    {
+                        type: "line",
+                        label: "Daily Target Burn Rate",
+                        data: dailyTargetLine,
+                        borderColor: "#f43f5e",
+                        borderWidth: 2,
+                        borderDash: [4, 4],
+                        pointRadius: 0,
+                        fill: false,
+                        order: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: "index", intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => `${items[0].label} ${summary.month_label || ""}`,
+                            label: (ctx) => ` ${ctx.dataset.label}: ${formatCurrency(ctx.parsed.y)}`
                         }
                     }
-                }
-            },
-            scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: { font: { size: 9 }, maxTicksLimit: 16 }
                 },
-                y: {
-                    beginAtZero: true,
-                    grid: { color: '#f1f5f9' },
-                    ticks: {
-                        font: { size: 9 },
-                        callback: (v) => '₹' + v
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10 }, maxTicksLimit: 16 }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: (val) => `₹${val}`,
+                            font: { size: 10 }
+                        },
+                        grid: { color: "#f1f5f9" }
                     }
                 }
             }
-        }
-    });
-}
-
-function renderCategoryRankingChart(categoryBreakdown) {
-    const ctx = document.getElementById('chart-category-ranking');
-    if (!ctx || !categoryBreakdown) return;
-
-    // Sort categories descending by spend amount
-    const sorted = Object.keys(categoryBreakdown)
-        .map(cat => ({
-            category: cat,
-            amount: categoryBreakdown[cat] || 0.0,
-            color: CATEGORY_CONFIG[cat] ? CATEGORY_CONFIG[cat].color : '#6366f1'
-        }))
-        .sort((a, b) => b.amount - a.amount);
-
-    const labels = sorted.map(s => s.category);
-    const amounts = sorted.map(s => s.amount);
-    const colors = sorted.map(s => s.color);
-
-    if (state.rankingChart) {
-        state.rankingChart.destroy();
+        });
     }
 
-    state.rankingChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Spend (₹)',
-                data: amounts,
-                backgroundColor: colors,
-                borderRadius: 4
-            }]
-        },
-        options: {
-            indexAxis: 'y', // Horizontal bars for clean reading
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: (item) => ` Total: ₹${item.parsed.x.toFixed(2)}`
+    // 2. Category Breakdown Chart Sorted Descending by Spend
+    const catBreakdown = summary.category_breakdown || {};
+    const sortedCategories = Object.keys(catBreakdown)
+        .map(cat => ({ category: cat, total: catBreakdown[cat] }))
+        .sort((a, b) => b.total - a.total);
+
+    const rankingLabels = sortedCategories.map(c => c.category);
+    const rankingData = sortedCategories.map(c => c.total);
+    const rankingColors = sortedCategories.map(c => (CATEGORY_CONFIG[c.category] ? CATEGORY_CONFIG[c.category].color : "#6366f1"));
+
+    const ctxRanking = document.getElementById("chart-category-ranking");
+    if (ctxRanking) {
+        if (state.chartCategoryRanking) state.chartCategoryRanking.destroy();
+
+        state.chartCategoryRanking = new Chart(ctxRanking.getContext("2d"), {
+            type: "bar",
+            data: {
+                labels: rankingLabels,
+                datasets: [{
+                    label: "Spend",
+                    data: rankingData,
+                    backgroundColor: rankingColors,
+                    borderRadius: 4,
+                    barThickness: 16
+                }]
+            },
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+                onClick: (evt, elements) => {
+                    if (elements && elements.length > 0) {
+                        const index = elements[0].index;
+                        const selectedCategory = rankingLabels[index];
+                        setCategoryFilter(selectedCategory);
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ` Spend: ${formatCurrency(ctx.parsed.x)}`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: (val) => `₹${val}`,
+                            font: { size: 10 }
+                        },
+                        grid: { color: "#f1f5f9" }
+                    },
+                    y: {
+                        ticks: { font: { size: 11, weight: "bold" } },
+                        grid: { display: false }
                     }
                 }
-            },
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    grid: { color: '#f1f5f9' },
-                    ticks: { font: { size: 9 }, callback: (v) => '₹' + v }
-                },
-                y: {
-                    grid: { display: false },
-                    ticks: { font: { size: 10, weight: 'bold' } }
-                }
-            },
-            onClick: (event, elements) => {
-                if (elements.length > 0) {
-                    const idx = elements[0].index;
-                    const clickedCategory = labels[idx];
-
-                    state.selectedCategory = clickedCategory;
-                    document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active-filter'));
-                    const matchingCard = document.getElementById(`cat-card-${clickedCategory}`);
-                    if (matchingCard) matchingCard.classList.add('active-filter');
-
-                    fetchExpensesList();
-                    showToast(`Filtered by ${clickedCategory}`, 'info');
-                }
             }
-        }
-    });
-}
-
-// =============================================================================
-// Monthly Budget Settings Planner Handlers
-// =============================================================================
-
-async function openBudgetModal() {
-    const modal = document.getElementById('modal-budget-settings');
-    modal.classList.remove('hidden');
-
-    try {
-        const response = await fetch('/api/budget');
-        if (!response.ok) throw new Error('Failed to load budget');
-        const data = await response.json();
-        const budget = data.budget;
-
-        document.getElementById('budget-input-income').value = budget.monthly_income;
-
-        const cats = budget.categories || {};
-        document.getElementById('budget-cat-Food').value = cats["Food"] || 0;
-        document.getElementById('budget-cat-Groceries').value = cats["Groceries"] || 0;
-        document.getElementById('budget-cat-Bike-Car').value = cats["Bike & Car"] || 0;
-        document.getElementById('budget-cat-Bills-Utilities').value = cats["Bills & Utilities"] || 0;
-        document.getElementById('budget-cat-Stationery-Office').value = cats["Stationery & Office"] || 0;
-        document.getElementById('budget-cat-Medical-Healthcare').value = cats["Medical & Healthcare"] || 0;
-        document.getElementById('budget-cat-General-Others').value = cats["General & Others"] || 0;
-
-        recalculateBudgetSummary();
-    } catch (e) {
-        console.error('Error opening budget modal:', e);
+        });
     }
 }
 
-function closeBudgetModal() {
-    document.getElementById('modal-budget-settings').classList.add('hidden');
+// ---------------------------------------------------------------------------
+// Filtering & List Display (Date Only, No Time)
+// ---------------------------------------------------------------------------
+
+function setCategoryFilter(category) {
+    state.categoryFilter = category;
+    document.getElementById("category-filter-badge").classList.remove("hidden");
+    document.getElementById("category-filter-name").textContent = category;
+    document.getElementById("btn-clear-category-filter").classList.remove("hidden");
+    document.getElementById("panel-badge-title").textContent = "Filtered Category";
+    document.getElementById("selected-date-title").textContent = `Category: ${category}`;
+
+    renderCategoryBudgetCards(state.monthlySummary ? state.monthlySummary.category_budgets || {} : {});
+    fetchSelectedExpenses();
 }
 
-function initBudgetLiveCalculator() {
-    const inputs = [
-        'budget-input-income',
-        'budget-cat-Food',
-        'budget-cat-Groceries',
-        'budget-cat-Bike-Car',
-        'budget-cat-Bills-Utilities',
-        'budget-cat-Stationery-Office',
-        'budget-cat-Medical-Healthcare',
-        'budget-cat-General-Others'
-    ];
+function clearCategoryFilter() {
+    state.categoryFilter = null;
+    document.getElementById("category-filter-badge").classList.add("hidden");
+    document.getElementById("btn-clear-category-filter").classList.add("hidden");
+    document.getElementById("panel-badge-title").textContent = "Selected Date";
+    document.getElementById("selected-date-title").textContent = formatDateReadable(state.selectedDate);
 
-    inputs.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('input', recalculateBudgetSummary);
-    });
+    renderCategoryBudgetCards(state.monthlySummary ? state.monthlySummary.category_budgets || {} : {});
+    fetchSelectedExpenses();
 }
 
-function recalculateBudgetSummary() {
-    const income = parseFloat(document.getElementById('budget-input-income').value) || 0.0;
-    const catSum = [
-        'budget-cat-Food',
-        'budget-cat-Groceries',
-        'budget-cat-Bike-Car',
-        'budget-cat-Bills-Utilities',
-        'budget-cat-Stationery-Office',
-        'budget-cat-Medical-Healthcare',
-        'budget-cat-General-Others'
-    ].reduce((acc, id) => {
-        return acc + (parseFloat(document.getElementById(id).value) || 0.0);
-    }, 0.0);
+function renderExpensesList(expenses, total, count) {
+    const listEl = document.getElementById("daily-expenses-list");
+    const emptyEl = document.getElementById("daily-empty-state");
+    const totalEl = document.getElementById("selected-date-total");
+    const countEl = document.getElementById("selected-date-count");
 
-    const buffer = income - catSum;
+    totalEl.textContent = formatCurrency(total);
+    countEl.textContent = `(${count} item${count === 1 ? "" : "s"})`;
 
-    document.getElementById('budget-calc-total-allocated').textContent = formatCurrency(catSum);
-    const bufferEl = document.getElementById('budget-calc-savings-buffer');
-    bufferEl.textContent = formatCurrency(buffer);
-
-    if (buffer >= 0) {
-        bufferEl.className = 'font-bold text-emerald-600';
-    } else {
-        bufferEl.className = 'font-bold text-rose-600';
+    if (!expenses || expenses.length === 0) {
+        listEl.innerHTML = "";
+        emptyEl.classList.remove("hidden");
+        return;
     }
+
+    emptyEl.classList.add("hidden");
+    listEl.innerHTML = expenses.map(item => {
+        const catCfg = CATEGORY_CONFIG[item.category] || CATEGORY_CONFIG["General & Others"];
+        return `
+            <div class="bg-white rounded-xl border border-slate-100 p-3 shadow-xs hover:shadow-sm transition-all flex items-start justify-between">
+                <div class="flex items-start space-x-3">
+                    <div class="h-9 w-9 rounded-xl ${catCfg.lightBgClass} ${catCfg.textColor} flex items-center justify-center text-sm shrink-0 mt-0.5">
+                        <i class="fa-solid ${catCfg.icon}"></i>
+                    </div>
+                    <div class="space-y-0.5">
+                        <h4 class="text-sm font-bold text-slate-800 leading-snug">${item.item}</h4>
+                        <div class="flex items-center space-x-2 text-xs text-slate-400">
+                            <span class="font-medium text-slate-500">${item.category}</span>
+                            <span>•</span>
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-semibold">
+                                <i class="fa-solid fa-credit-card mr-1 text-[9px]"></i>${item.payment_mode || "UPI"}
+                            </span>
+                            <span>${item.date}</span>
+                        </div>
+                        ${item.notes ? `<p class="text-[11px] text-slate-400 italic mt-0.5 truncate max-w-xs">${item.notes}</p>` : ""}
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="text-base font-extrabold text-slate-900">${formatCurrency(item.amount)}</span>
+                </div>
+            </div>
+        `;
+    }).join("");
 }
 
-async function handleBudgetSubmit(e) {
-    e.preventDefault();
+// ---------------------------------------------------------------------------
+// Interactive Calendar Grid
+// ---------------------------------------------------------------------------
 
-    const submitBtn = document.getElementById('btn-save-budget-settings');
-    const originalText = submitBtn.innerHTML;
+function renderCalendar(dailyTotals) {
+    const calendarGrid = document.getElementById("calendar-grid");
+    const calendarTitle = document.getElementById("calendar-title");
+    calendarGrid.innerHTML = "";
 
-    const payload = {
-        monthly_income: parseFloat(document.getElementById('budget-input-income').value),
-        categories: {
-            "Food": parseFloat(document.getElementById('budget-cat-Food').value) || 0.0,
-            "Groceries": parseFloat(document.getElementById('budget-cat-Groceries').value) || 0.0,
-            "Bike & Car": parseFloat(document.getElementById('budget-cat-Bike-Car').value) || 0.0,
-            "Bills & Utilities": parseFloat(document.getElementById('budget-cat-Bills-Utilities').value) || 0.0,
-            "Stationery & Office": parseFloat(document.getElementById('budget-cat-Stationery-Office').value) || 0.0,
-            "Medical & Healthcare": parseFloat(document.getElementById('budget-cat-Medical-Healthcare').value) || 0.0,
-            "General & Others": parseFloat(document.getElementById('budget-cat-General-Others').value) || 0.0
-        }
-    };
+    calendarTitle.textContent = `${MONTH_NAMES[state.currentMonth - 1]} ${state.currentYear}`;
 
-    try {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Saving...</span>`;
+    const dateSpendMap = {};
+    dailyTotals.forEach(d => { dateSpendMap[d.date] = d.total; });
 
-        const response = await fetch('/api/budget', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+    const firstDayIndex = new Date(state.currentYear, state.currentMonth - 1, 1).getDay();
+    const daysInMonth = new Date(state.currentYear, state.currentMonth, 0).getDate();
+
+    for (let i = 0; i < firstDayIndex; i++) {
+        const blank = document.createElement("div");
+        blank.className = "h-14 sm:h-16 rounded-xl bg-slate-50/50 border border-transparent";
+        calendarGrid.appendChild(blank);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${state.currentYear}-${String(state.currentMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        const hasSpend = Boolean(dateSpendMap[dateStr]);
+        const isSelected = state.selectedDate === dateStr && !state.categoryFilter;
+
+        const tile = document.createElement("button");
+        tile.type = "button";
+        tile.className = `calendar-tile h-14 sm:h-16 rounded-xl border p-1 sm:p-1.5 flex flex-col justify-between text-left transition-all ${
+            isSelected
+                ? "border-brand-600 ring-2 ring-brand-500/30 bg-brand-50/40"
+                : hasSpend
+                ? "border-emerald-200/80 bg-white hover:border-slate-300"
+                : "border-slate-100 bg-white hover:bg-slate-50"
+        }`;
+
+        tile.innerHTML = `
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold ${isSelected ? 'text-brand-700' : 'text-slate-700'}">${day}</span>
+                ${hasSpend ? '<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>' : ''}
+            </div>
+            <div class="text-right">
+                ${hasSpend ? `<span class="text-[10px] sm:text-[11px] font-extrabold text-emerald-600 block">${formatCompactCurrency(dateSpendMap[dateStr])}</span>` : '<span class="text-[9px] text-slate-300">-</span>'}
+            </div>
+        `;
+
+        tile.addEventListener("click", () => {
+            state.selectedDate = dateStr;
+            clearCategoryFilter();
+            renderCalendar(dailyTotals);
         });
 
-        const result = await response.json();
-        if (!response.ok) {
-            throw new Error(result.message || 'Failed to update budget settings');
-        }
-
-        playSuccessChime();
-        showToast('Monthly budget & income updated successfully!', 'success');
-        closeBudgetModal();
-
-        await loadDashboardData();
-    } catch (err) {
-        console.error('Budget save error:', err);
-        showToast(err.message || 'Error updating budget', 'error');
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
+        calendarGrid.appendChild(tile);
     }
 }
 
-// =============================================================================
-// Web Speech API - Voice Assistant Engine
-// =============================================================================
+// ---------------------------------------------------------------------------
+// Budget Settings Modal
+// ---------------------------------------------------------------------------
+
+async function openBudgetModal() {
+    try {
+        const res = await fetch("/api/budget");
+        const data = await res.json();
+        const budget = data.budget || {};
+        state.budgetConfig = budget;
+
+        document.getElementById("input-monthly-income").value = budget.monthly_income || 25000;
+
+        const catContainer = document.getElementById("budget-category-inputs-container");
+        catContainer.innerHTML = "";
+
+        const cats = Object.keys(CATEGORY_CONFIG);
+        cats.forEach(cat => {
+            const cfg = CATEGORY_CONFIG[cat];
+            const currentVal = (budget.categories && budget.categories[cat]) ? budget.categories[cat] : 0;
+
+            const row = document.createElement("div");
+            row.className = "flex items-center justify-between text-xs";
+            row.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <span class="h-2 w-2 rounded-full" style="background-color: ${cfg.color}"></span>
+                    <span class="font-medium text-slate-700">${cat}</span>
+                </div>
+                <div class="w-32">
+                    <input type="number" step="100" min="0" data-category="${cat}" value="${currentVal}"
+                        class="budget-cat-input w-full px-2.5 py-1 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500 font-semibold text-right">
+                </div>
+            `;
+            catContainer.appendChild(row);
+        });
+
+        updateBudgetBufferCalculator();
+
+        document.querySelectorAll(".budget-cat-input, #input-monthly-income").forEach(inp => {
+            inp.addEventListener("input", updateBudgetBufferCalculator);
+        });
+
+        document.getElementById("modal-budget-settings").classList.remove("hidden");
+    } catch (e) {
+        console.error("Failed to load budget:", e);
+    }
+}
+
+function updateBudgetBufferCalculator() {
+    const income = parseFloat(document.getElementById("input-monthly-income").value) || 0;
+    let totalAlloc = 0;
+    document.querySelectorAll(".budget-cat-input").forEach(inp => {
+        totalAlloc += parseFloat(inp.value) || 0;
+    });
+
+    const unallocated = income - totalAlloc;
+    document.getElementById("modal-budget-total-allocated").textContent = formatCurrency(totalAlloc);
+
+    const unallocEl = document.getElementById("modal-budget-unallocated");
+    unallocEl.textContent = formatCurrency(unallocated);
+    if (unallocated < 0) {
+        unallocEl.className = "font-bold text-rose-600";
+    } else {
+        unallocEl.className = "font-bold text-emerald-600";
+    }
+}
+
+async function saveBudgetSettings(e) {
+    e.preventDefault();
+    const income = parseFloat(document.getElementById("input-monthly-income").value) || 0;
+    const categories = {};
+
+    document.querySelectorAll(".budget-cat-input").forEach(inp => {
+        const cat = inp.getAttribute("data-category");
+        categories[cat] = parseFloat(inp.value) || 0;
+    });
+
+    try {
+        const res = await fetch("/api/budget", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ monthly_income: income, categories })
+        });
+        const data = await res.json();
+        if (data.status === "success") {
+            playAudioChime(750, 0.2);
+            document.getElementById("modal-budget-settings").classList.add("hidden");
+            fetchMonthlySummary();
+        } else {
+            alert(data.message || "Failed to save budget settings.");
+        }
+    } catch (err) {
+        console.error("Error saving budget:", err);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Speech Recognition Flow (Web Speech API)
+// ---------------------------------------------------------------------------
 
 function initSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return null;
 
-    if (!SpeechRecognition) {
-        console.warn('Web Speech API is not supported in this browser.');
-        return;
-    }
+    const recognizer = new SpeechRecognition();
+    recognizer.continuous = false;
+    recognizer.interimResults = true;
+    recognizer.lang = "en-IN";
 
-    try {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        recognition.lang = 'en-IN';
+    recognizer.onstart = () => {
+        state.isListening = true;
+        playAudioChime(520, 0.15);
+        document.getElementById("voice-listening-overlay").classList.remove("hidden");
+        document.getElementById("voice-live-transcript").textContent = "Listening... speak now";
+    };
 
-        recognition.onstart = () => {
-            state.isRecording = true;
-            state.lastTranscript = "";
-            setVoiceUIState(true);
-            document.getElementById('voice-live-transcript').textContent = 'Listening... Speak now.';
-        };
+    recognizer.onresult = (event) => {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            transcript += event.results[i][0].transcript;
+        }
+        document.getElementById("voice-live-transcript").textContent = transcript;
+    };
 
-        recognition.onresult = (event) => {
-            let interimTranscript = '';
-            let finalTranscript = '';
+    recognizer.onerror = (event) => {
+        state.isListening = false;
+        document.getElementById("voice-listening-overlay").classList.add("hidden");
+    };
 
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
-                } else {
-                    interimTranscript += event.results[i][0].transcript;
-                }
-            }
+    recognizer.onend = () => {
+        state.isListening = false;
+        const text = document.getElementById("voice-live-transcript").textContent.trim();
+        document.getElementById("voice-listening-overlay").classList.add("hidden");
+        if (text && !text.startsWith("Listening...")) {
+            processVoiceTranscript(text);
+        }
+    };
 
-            const currentText = finalTranscript || interimTranscript;
-            if (currentText) {
-                state.lastTranscript = currentText;
-                document.getElementById('voice-live-transcript').textContent = `"${currentText}"`;
-            }
-        };
-
-        recognition.onerror = (event) => {
-            console.warn('Speech recognition error:', event.error);
-            setVoiceUIState(false);
-            if (event.error === 'not-allowed') {
-                showToast('Microphone access denied. Please allow microphone permissions.', 'error');
-            } else if (event.error === 'no-speech') {
-                showToast('No speech was detected. Please try again.', 'error');
-            } else {
-                showToast(`Voice input error: ${event.error}`, 'error');
-            }
-        };
-
-        recognition.onend = () => {
-            state.isRecording = false;
-            setVoiceUIState(false);
-
-            if (state.lastTranscript && state.lastTranscript.trim().length > 0) {
-                processVoiceTranscript(state.lastTranscript.trim());
-            }
-        };
-
-        state.recognition = recognition;
-    } catch (err) {
-        console.error('Failed to initialize Speech Recognition:', err);
-    }
-}
-
-function toggleVoiceRecognition() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition || !state.recognition) {
-        showToast('Voice Recognition is not supported by this browser. Please use Chrome or Edge.', 'error');
-        return;
-    }
-
-    if (state.isRecording) {
-        stopVoiceRecognition();
-    } else {
-        startVoiceRecognition();
-    }
+    return recognizer;
 }
 
 function startVoiceRecognition() {
-    if (!state.recognition) return;
-    try {
-        state.recognition.start();
-    } catch (e) {
-        console.warn('Recognition start error:', e);
+    if (!state.speechRecognition) {
+        state.speechRecognition = initSpeechRecognition();
     }
-}
-
-function stopVoiceRecognition() {
-    if (state.recognition && state.isRecording) {
-        state.recognition.stop();
-    }
-    setVoiceUIState(false);
-}
-
-function cancelVoiceRecognition() {
-    if (state.recognition && state.isRecording) {
-        state.lastTranscript = "";
-        state.recognition.abort();
-    }
-    setVoiceUIState(false);
-}
-
-function setVoiceUIState(isRecording) {
-    const overlay = document.getElementById('voice-listening-overlay');
-    const fabIcon = document.getElementById('fab-mic-icon');
-    const fabBtn = document.getElementById('btn-voice-fab');
-    const headerPulse = document.getElementById('voice-header-pulse');
-
-    if (isRecording) {
-        overlay.classList.remove('hidden');
-        fabBtn.classList.add('recording-pulse', 'bg-rose-600');
-        fabIcon.className = 'fa-solid fa-stop text-xl';
-        headerPulse.classList.add('bg-rose-500');
+    if (state.speechRecognition) {
+        try {
+            state.speechRecognition.start();
+        } catch (e) {
+            state.speechRecognition.stop();
+        }
     } else {
-        overlay.classList.add('hidden');
-        fabBtn.classList.remove('recording-pulse', 'bg-rose-600');
-        fabIcon.className = 'fa-solid fa-microphone text-xl';
-        headerPulse.classList.remove('bg-rose-500');
+        alert("Speech Recognition is not supported by your browser. Please use Google Chrome or Microsoft Edge.");
     }
 }
 
 async function processVoiceTranscript(transcript) {
-    showToast('Analyzing speech with AI engine...', 'info');
-
     try {
-        const response = await fetch('/api/parse-voice', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("/api/parse-voice", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: transcript })
         });
+        const data = await res.json();
+        if (data.status === "success") {
+            const parsed = data.data;
+            playAudioChime(880, 0.2);
 
-        const result = await response.json();
-        if (!response.ok || !result.success) {
-            throw new Error(result.message || 'Unable to extract expense details');
+            // Populate voice confirmation modal (Date only, no time)
+            document.getElementById("voice-original-text").textContent = `"${data.transcript || transcript}"`;
+            document.getElementById("voice-input-item").value = parsed.item || "";
+            document.getElementById("voice-input-amount").value = parsed.amount || "";
+            document.getElementById("voice-input-date").value = parsed.date || new Date().toISOString().split("T")[0];
+            document.getElementById("voice-input-category").value = parsed.category || "Food";
+            document.getElementById("voice-input-payment-mode").value = parsed.payment_mode || "UPI";
+
+            document.getElementById("modal-voice-confirm").classList.remove("hidden");
+        } else {
+            alert(data.message || "Could not parse voice command. Please try again.");
         }
-
-        openVoiceConfirmModal(result.transcript, result.data);
     } catch (err) {
-        console.error('Voice parse error:', err);
-        showToast(err.message || 'Failed to parse voice command. Try again.', 'error');
+        console.error("Error processing voice transcript:", err);
     }
 }
 
-function openVoiceConfirmModal(rawTranscript, extractedData) {
-    const modal = document.getElementById('modal-voice-confirm');
+// ---------------------------------------------------------------------------
+// Month-End Email Dispatch Flow
+// ---------------------------------------------------------------------------
 
-    document.getElementById('voice-original-text').textContent = `"${rawTranscript}"`;
-    document.getElementById('voice-input-date').value = extractedData.date || formatDate(new Date());
-    document.getElementById('voice-input-time').value = (extractedData.time || new Date().toTimeString()).slice(0, 5);
-    document.getElementById('voice-input-category').value = extractedData.category || "Food";
-    document.getElementById('voice-input-item').value = extractedData.item || "";
-    document.getElementById('voice-input-amount').value = extractedData.amount > 0 ? extractedData.amount : "";
-    document.getElementById('voice-input-payment-mode').value = extractedData.payment_mode || "UPI";
-    document.getElementById('voice-input-notes').value = extractedData.notes || `Voice input: "${rawTranscript}"`;
+function openEmailReportModal() {
+    const monthStr = `${state.currentYear}-${String(state.currentMonth).padStart(2, "0")}`;
+    document.getElementById("email-report-month-label").textContent = `${MONTH_NAMES[state.currentMonth - 1]} ${state.currentYear}`;
+    document.getElementById("email-report-attachment-name").textContent = `Expenses_${monthStr}.csv`;
 
-    modal.classList.remove('hidden');
-    document.getElementById('voice-input-amount').focus();
+    const statusBanner = document.getElementById("email-status-banner");
+    statusBanner.className = "hidden p-2.5 rounded-lg text-xs font-semibold";
+    statusBanner.textContent = "";
+
+    document.getElementById("modal-email-report").classList.remove("hidden");
 }
 
-function closeVoiceConfirmModal() {
-    document.getElementById('modal-voice-confirm').classList.add('hidden');
-}
+async function handleSendEmailReport() {
+    const monthStr = `${state.currentYear}-${String(state.currentMonth).padStart(2, "0")}`;
+    const btn = document.getElementById("btn-send-email-confirm");
+    const statusBanner = document.getElementById("email-status-banner");
 
-async function handleVoiceConfirmSubmit(e) {
-    e.preventDefault();
-
-    const submitBtn = document.getElementById('btn-save-voice-confirm');
-    const originalText = submitBtn.innerHTML;
-
-    const payload = {
-        date: document.getElementById('voice-input-date').value,
-        time: document.getElementById('voice-input-time').value ? `${document.getElementById('voice-input-time').value}:00` : '',
-        category: document.getElementById('voice-input-category').value,
-        item: document.getElementById('voice-input-item').value.trim(),
-        amount: parseFloat(document.getElementById('voice-input-amount').value),
-        payment_mode: document.getElementById('voice-input-payment-mode').value,
-        notes: document.getElementById('voice-input-notes').value.trim()
-    };
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Sending...`;
 
     try {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Saving...</span>`;
-
-        const response = await fetch('/api/expenses', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+        const res = await fetch(`/api/send-monthly-report?month=${monthStr}`, {
+            method: "POST"
         });
+        const data = await res.json();
 
-        const result = await response.json();
-        if (!response.ok) {
-            throw new Error(result.message || 'Failed to save expense');
+        if (res.ok && data.status === "success") {
+            playAudioChime(950, 0.25);
+            statusBanner.className = "p-2.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 block";
+            statusBanner.textContent = `✓ ${data.message}`;
+            setTimeout(() => {
+                document.getElementById("modal-email-report").classList.add("hidden");
+            }, 2000);
+        } else {
+            statusBanner.className = "p-2.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 block";
+            statusBanner.textContent = `✗ ${data.message || "Failed to dispatch email."}`;
         }
-
-        playSuccessChime();
-        showToast(`Voice expense recorded: ${payload.item} (₹${payload.amount})`, 'success');
-        closeVoiceConfirmModal();
-
-        state.selectedDate = payload.date;
-        state.selectedCategory = null;
-        await loadDashboardData();
     } catch (err) {
-        console.error('Confirmation save error:', err);
-        showToast(err.message || 'Error recording expense', 'error');
+        statusBanner.className = "p-2.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 block";
+        statusBanner.textContent = `✗ Network error sending email.`;
     } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-envelope mr-1.5"></i> Send Report Now`;
     }
 }
 
-// =============================================================================
-// Web Audio API Synthesized Chime
-// =============================================================================
+// ---------------------------------------------------------------------------
+// Password-Protected Database Reset Flow
+// ---------------------------------------------------------------------------
 
-function playSuccessChime() {
-    try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-
-        const ctx = new AudioCtx();
-        const now = ctx.currentTime;
-
-        const osc1 = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(659.25, now); // E5
-        osc1.frequency.setValueAtTime(987.77, now + 0.12); // B5
-
-        gain.gain.setValueAtTime(0.15, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-
-        osc1.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc1.start(now);
-        osc1.stop(now + 0.5);
-    } catch (e) {
-        // Fallback
-    }
+function openResetModal() {
+    document.getElementById("input-admin-password").value = "";
+    const errEl = document.getElementById("reset-error-msg");
+    errEl.classList.add("hidden");
+    errEl.textContent = "";
+    document.getElementById("modal-reset-db").classList.remove("hidden");
+    document.getElementById("input-admin-password").focus();
 }
 
-// =============================================================================
-// Interactive Calendar Component
-// =============================================================================
-
-function renderCalendar(year, month, dailyTotals) {
-    const grid = document.getElementById('calendar-grid');
-    grid.innerHTML = '';
-
-    const dailyMap = {};
-    if (Array.isArray(dailyTotals)) {
-        dailyTotals.forEach(item => {
-            dailyMap[item.date] = item;
-        });
-    }
-
-    const firstDayIndex = new Date(year, month - 1, 1).getDay(); // 0 = Sunday
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const todayStr = formatDate(new Date());
-
-    // Leading padding cells
-    for (let i = 0; i < firstDayIndex; i++) {
-        const emptyCell = document.createElement('div');
-        emptyCell.className = 'calendar-tile rounded-xl border border-transparent bg-slate-50/50 opacity-40';
-        grid.appendChild(emptyCell);
-    }
-
-    // Days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayExpense = dailyMap[dateStr];
-        const isToday = (dateStr === todayStr);
-        const isSelected = (dateStr === state.selectedDate && !state.selectedCategory);
-
-        const tile = document.createElement('button');
-        tile.type = 'button';
-        tile.dataset.date = dateStr;
-        tile.className = `calendar-tile rounded-xl border p-2 flex flex-col justify-between text-left transition-all ${
-            isSelected 
-                ? 'selected' 
-                : isToday 
-                    ? 'today border-blue-400 bg-blue-50/70' 
-                    : 'border-slate-200/90 bg-white hover:bg-slate-50'
-        }`;
-
-        tile.innerHTML = `
-            <div class="flex items-center justify-between w-full">
-                <span class="text-xs font-bold ${isToday ? 'text-blue-700 font-extrabold' : 'text-slate-700'}">
-                    ${day}
-                </span>
-                ${dayExpense ? `<span class="h-2 w-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/40"></span>` : ''}
-            </div>
-            <div class="w-full truncate text-[11px] font-semibold text-right ${dayExpense ? 'text-emerald-700' : 'text-slate-300'}">
-                ${dayExpense ? formatCurrencyCompact(dayExpense.total) : '—'}
-            </div>
-        `;
-
-        tile.addEventListener('click', () => {
-            state.selectedDate = dateStr;
-            state.selectedCategory = null;
-            document.querySelectorAll('.calendar-tile').forEach(t => t.classList.remove('selected'));
-            document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active-filter'));
-            tile.classList.add('selected');
-            fetchExpensesList();
-        });
-
-        grid.appendChild(tile);
-    }
-}
-
-function changeMonth(delta) {
-    state.currentMonth += delta;
-    if (state.currentMonth < 1) {
-        state.currentMonth = 12;
-        state.currentYear -= 1;
-    } else if (state.currentMonth > 12) {
-        state.currentMonth = 1;
-        state.currentYear += 1;
-    }
-    fetchMonthlySummary(state.currentYear, state.currentMonth);
-}
-
-function goToCurrentMonth() {
-    const now = new Date();
-    state.currentYear = now.getFullYear();
-    state.currentMonth = now.getMonth() + 1;
-    state.selectedDate = formatDate(now);
-    state.selectedCategory = null;
-    fetchMonthlySummary(state.currentYear, state.currentMonth);
-    fetchExpensesList();
-}
-
-// =============================================================================
-// UI Component Helpers
-// =============================================================================
-
-function createExpenseCard(exp) {
-    const catCfg = CATEGORY_CONFIG[exp.category] || {
-        icon: "fa-solid fa-tag",
-        bg: "bg-slate-100",
-        text: "text-slate-700",
-        color: "#64748b"
-    };
-
-    const payBadge = PAYMENT_BADGES[exp.payment_mode] || {
-        bg: "bg-slate-100",
-        text: "text-slate-700",
-        border: "border-slate-200",
-        icon: "fa-solid fa-receipt"
-    };
-
-    return `
-        <div class="bg-white border border-slate-200/90 rounded-xl p-3.5 hover:shadow-sm hover:border-slate-300 transition-all">
-            <div class="flex items-start justify-between">
-                <div class="flex items-center space-x-3">
-                    <div class="h-9 w-9 rounded-xl ${catCfg.bg} ${catCfg.text} flex items-center justify-center text-sm shadow-sm flex-shrink-0">
-                        <i class="${catCfg.icon}"></i>
-                    </div>
-                    <div>
-                        <h4 class="text-xs font-bold text-slate-900 leading-tight">${escapeHtml(exp.item)}</h4>
-                        <span class="text-[11px] text-slate-400 font-medium">${escapeHtml(exp.category)}</span>
-                    </div>
-                </div>
-                <div class="text-right flex-shrink-0 ml-2">
-                    <span class="text-sm font-extrabold text-slate-900 block">${formatCurrency(exp.amount)}</span>
-                </div>
-            </div>
-
-            <div class="flex items-center justify-between text-[10px] text-slate-400 pt-2.5 mt-2.5 border-t border-slate-100">
-                <div class="flex items-center space-x-2">
-                    <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full border ${payBadge.bg} ${payBadge.text} ${payBadge.border} font-semibold">
-                        <i class="${payBadge.icon} text-[9px]"></i>
-                        <span>${escapeHtml(exp.payment_mode)}</span>
-                    </span>
-                    <span>${escapeHtml(exp.date)}</span>
-                    ${exp.time ? `<span><i class="fa-regular fa-clock mr-0.5"></i>${escapeHtml(exp.time.slice(0, 5))}</span>` : ''}
-                </div>
-                ${exp.notes ? `<span class="italic text-slate-500 max-w-[120px] truncate" title="${escapeHtml(exp.notes)}">${escapeHtml(exp.notes)}</span>` : ''}
-            </div>
-        </div>
-    `;
-}
-
-function updateMonthBadge(label) {
-    const badge = document.getElementById('current-month-badge');
-    if (badge) badge.textContent = label;
-}
-
-// =============================================================================
-// Quick Expense Form & Modal Handlers (Manual Entry)
-// =============================================================================
-
-function openAddModal(dateToSelect = null) {
-    const modal = document.getElementById('modal-add-expense');
-    const inputDate = document.getElementById('input-date');
-    const inputTime = document.getElementById('input-time');
-
-    inputDate.value = dateToSelect || formatDate(new Date());
-
-    const now = new Date();
-    inputTime.value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-    if (state.selectedCategory) {
-        document.getElementById('input-category').value = state.selectedCategory;
-    }
-
-    modal.classList.remove('hidden');
-    document.getElementById('input-item').focus();
-}
-
-function closeAddModal() {
-    const modal = document.getElementById('modal-add-expense');
-    modal.classList.add('hidden');
-    document.getElementById('form-add-expense').reset();
-}
-
-async function handleExpenseSubmit(e) {
+async function handleResetDatabase(e) {
     e.preventDefault();
+    const password = document.getElementById("input-admin-password").value.trim();
+    const errEl = document.getElementById("reset-error-msg");
+    const btn = document.getElementById("btn-confirm-reset");
 
-    const submitBtn = document.getElementById('btn-submit-expense');
-    const originalText = submitBtn.innerHTML;
-
-    const payload = {
-        date: document.getElementById('input-date').value,
-        time: document.getElementById('input-time').value ? `${document.getElementById('input-time').value}:00` : '',
-        category: document.getElementById('input-category').value,
-        item: document.getElementById('input-item').value.trim(),
-        amount: parseFloat(document.getElementById('input-amount').value),
-        payment_mode: document.getElementById('input-payment-mode').value,
-        notes: document.getElementById('input-notes').value.trim()
-    };
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Resetting...`;
 
     try {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Saving...</span>`;
-
-        const response = await fetch('/api/expenses', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+        const res = await fetch("/api/reset-database", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password })
         });
+        const data = await res.json();
 
-        const result = await response.json();
-
-        if (!response.ok) {
-            throw new Error(result.message || 'Failed to record expense');
+        if (res.ok && data.status === "success") {
+            playAudioChime(400, 0.3);
+            document.getElementById("modal-reset-db").classList.add("hidden");
+            alert("Database successfully reset! All expenses wiped.");
+            fetchMonthlySummary();
+            fetchSelectedExpenses();
+        } else {
+            errEl.textContent = data.message || "Invalid Password.";
+            errEl.classList.remove("hidden");
         }
-
-        playSuccessChime();
-        showToast('Expense recorded successfully!', 'success');
-        closeAddModal();
-
-        state.selectedDate = payload.date;
-        state.selectedCategory = null;
-        await loadDashboardData();
-    } catch (error) {
-        console.error('Submission error:', error);
-        showToast(error.message || 'Error recording expense', 'error');
+    } catch (err) {
+        errEl.textContent = "Network error processing reset.";
+        errEl.classList.remove("hidden");
     } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-trash-can mr-1"></i> Confirm Reset`;
     }
 }
 
-// =============================================================================
-// Toast Notifications
-// =============================================================================
+// ---------------------------------------------------------------------------
+// Event Listeners & Bootstrapping
+// ---------------------------------------------------------------------------
 
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-
-    const toast = document.createElement('div');
-    const isSuccess = type === 'success';
-    const isError = type === 'error';
-
-    toast.className = `pointer-events-auto flex items-center space-x-2.5 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold animate-scale-up ${
-        isSuccess ? 'bg-emerald-600 text-white border-emerald-700' :
-        isError ? 'bg-rose-600 text-white border-rose-700' :
-        'bg-slate-900 text-white border-slate-800'
-    }`;
-
-    toast.innerHTML = `
-        <i class="${isSuccess ? 'fa-solid fa-circle-check' : isError ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-info'} text-sm"></i>
-        <span>${escapeHtml(message)}</span>
-    `;
-
-    container.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(8px)';
-        toast.style.transition = 'all 0.25s ease';
-        setTimeout(() => toast.remove(), 250);
-    }, 3200);
-}
-
-// =============================================================================
-// Formatting Utilities
-// =============================================================================
-
-function formatDate(date) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-}
-
-function formatCurrency(amount) {
-    const num = parseFloat(amount) || 0.0;
-    return '₹' + num.toLocaleString('en-IN', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+document.addEventListener("DOMContentLoaded", () => {
+    // Top month navigation
+    document.getElementById("btn-prev-month").addEventListener("click", () => {
+        state.currentMonth--;
+        if (state.currentMonth < 1) {
+            state.currentMonth = 12;
+            state.currentYear--;
+        }
+        fetchMonthlySummary();
+        fetchSelectedExpenses();
     });
-}
 
-function formatCurrencyCompact(amount) {
-    const num = parseFloat(amount) || 0.0;
-    if (num >= 100000) return '₹' + (num / 100000).toFixed(1) + 'L';
-    if (num >= 1000) return '₹' + (num / 1000).toFixed(1) + 'k';
-    return '₹' + Math.round(num);
-}
+    document.getElementById("btn-next-month").addEventListener("click", () => {
+        state.currentMonth++;
+        if (state.currentMonth > 12) {
+            state.currentMonth = 1;
+            state.currentYear++;
+        }
+        fetchMonthlySummary();
+        fetchSelectedExpenses();
+    });
 
-function escapeHtml(str) {
-    if (!str) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
+    document.getElementById("btn-current-month").addEventListener("click", () => {
+        const now = new Date();
+        state.currentYear = now.getFullYear();
+        state.currentMonth = now.getMonth() + 1;
+        state.selectedDate = now.toISOString().split("T")[0];
+        clearCategoryFilter();
+        fetchMonthlySummary();
+        fetchSelectedExpenses();
+    });
+
+    // Budget Planner modal triggers
+    document.getElementById("btn-open-budget-modal").addEventListener("click", openBudgetModal);
+    document.getElementById("btn-close-budget-modal").addEventListener("click", () => {
+        document.getElementById("modal-budget-settings").classList.add("hidden");
+    });
+    document.getElementById("btn-cancel-budget-modal").addEventListener("click", () => {
+        document.getElementById("modal-budget-settings").classList.add("hidden");
+    });
+    document.getElementById("form-budget-settings").addEventListener("submit", saveBudgetSettings);
+
+    // Email Report Modal triggers
+    document.getElementById("btn-email-report").addEventListener("click", openEmailReportModal);
+    document.getElementById("btn-close-email-modal").addEventListener("click", () => {
+        document.getElementById("modal-email-report").classList.add("hidden");
+    });
+    document.getElementById("btn-cancel-email").addEventListener("click", () => {
+        document.getElementById("modal-email-report").classList.add("hidden");
+    });
+    document.getElementById("btn-send-email-confirm").addEventListener("click", handleSendEmailReport);
+
+    // Reset Database Modal triggers
+    document.getElementById("btn-open-reset-modal").addEventListener("click", openResetModal);
+    document.getElementById("btn-close-reset-modal").addEventListener("click", () => {
+        document.getElementById("modal-reset-db").classList.add("hidden");
+    });
+    document.getElementById("btn-cancel-reset").addEventListener("click", () => {
+        document.getElementById("modal-reset-db").classList.add("hidden");
+    });
+    document.getElementById("form-reset-db").addEventListener("submit", handleResetDatabase);
+
+    // Voice triggers
+    document.getElementById("btn-voice-header").addEventListener("click", startVoiceRecognition);
+    document.getElementById("btn-voice-fab").addEventListener("click", startVoiceRecognition);
+    document.getElementById("btn-stop-voice").addEventListener("click", () => {
+        if (state.speechRecognition) state.speechRecognition.stop();
+    });
+    document.getElementById("btn-cancel-voice").addEventListener("click", () => {
+        if (state.speechRecognition) state.speechRecognition.abort();
+        document.getElementById("voice-listening-overlay").classList.add("hidden");
+    });
+
+    // Voice confirmation modal triggers (Date Only, No Time)
+    document.getElementById("btn-close-voice-confirm").addEventListener("click", () => {
+        document.getElementById("modal-voice-confirm").classList.add("hidden");
+    });
+    document.getElementById("btn-cancel-voice-confirm").addEventListener("click", () => {
+        document.getElementById("modal-voice-confirm").classList.add("hidden");
+    });
+    document.getElementById("form-voice-confirm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const payload = {
+            item: document.getElementById("voice-input-item").value.trim(),
+            amount: parseFloat(document.getElementById("voice-input-amount").value),
+            date: document.getElementById("voice-input-date").value,
+            category: document.getElementById("voice-input-category").value,
+            payment_mode: document.getElementById("voice-input-payment-mode").value,
+            notes: `Voice input: ${document.getElementById("voice-original-text").textContent}`
+        };
+
+        const res = await fetch("/api/expenses", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.status === "success") {
+            playAudioChime(950, 0.2);
+            document.getElementById("modal-voice-confirm").classList.add("hidden");
+            fetchMonthlySummary();
+            fetchSelectedExpenses();
+        } else {
+            alert(data.message || "Failed to commit expense.");
+        }
+    });
+
+    // Manual Add Expense modal triggers (Date Only, No Time)
+    document.getElementById("btn-open-add-modal").addEventListener("click", () => {
+        document.getElementById("input-date").value = state.selectedDate || new Date().toISOString().split("T")[0];
+        document.getElementById("modal-add-expense").classList.remove("hidden");
+    });
+    document.getElementById("btn-add-for-selected-date").addEventListener("click", () => {
+        document.getElementById("input-date").value = state.selectedDate || new Date().toISOString().split("T")[0];
+        document.getElementById("modal-add-expense").classList.remove("hidden");
+    });
+    document.getElementById("btn-close-add-modal").addEventListener("click", () => {
+        document.getElementById("modal-add-expense").classList.add("hidden");
+    });
+    document.getElementById("btn-cancel-add-modal").addEventListener("click", () => {
+        document.getElementById("modal-add-expense").classList.add("hidden");
+    });
+    document.getElementById("form-add-expense").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const payload = {
+            item: document.getElementById("input-item").value.trim(),
+            amount: parseFloat(document.getElementById("input-amount").value),
+            date: document.getElementById("input-date").value,
+            category: document.getElementById("input-category").value,
+            payment_mode: document.getElementById("input-payment-mode").value,
+            notes: document.getElementById("input-notes").value.trim()
+        };
+
+        const res = await fetch("/api/expenses", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.status === "success") {
+            playAudioChime(950, 0.2);
+            document.getElementById("modal-add-expense").classList.add("hidden");
+            document.getElementById("form-add-expense").reset();
+            fetchMonthlySummary();
+            fetchSelectedExpenses();
+        } else {
+            alert(data.message || "Failed to save expense.");
+        }
+    });
+
+    // Clear filter button
+    document.getElementById("btn-clear-category-filter").addEventListener("click", clearCategoryFilter);
+
+    // Export dropdown
+    const exportBtn = document.getElementById("btn-export-menu");
+    const exportMenu = document.getElementById("export-menu");
+    exportBtn.addEventListener("click", () => exportMenu.classList.toggle("hidden"));
+    document.addEventListener("click", (e) => {
+        if (!document.getElementById("export-dropdown-wrapper").contains(e.target)) {
+            exportMenu.classList.add("hidden");
+        }
+    });
+
+    // Initial Load
+    fetchMonthlySummary();
+    fetchSelectedExpenses();
+});

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Smart Home Expense Tracker - Modern household budget management with AI Voice Assistant, 7-category budget planner, savings tracker, and spending analytics.">
+    <meta name="description" content="Smart Home Expense Tracker - Modern household budget management with AI Voice Assistant, 7-category budget planner, savings tracker, automated email reports, and spending analytics.">
     <title>Smart Home Expense Tracker | Budget & Savings Planner</title>
 
     <!-- Tailwind CSS CDN -->
@@ -30,7 +30,7 @@
     </script>
 
     <!-- FontAwesome 6 Icons CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -60,11 +60,11 @@
             </div>
 
             <!-- Action Controls -->
-            <div class="flex items-center space-x-2 sm:space-x-3">
+            <div class="flex items-center space-x-2 sm:space-x-2.5">
                 <!-- Monthly Budget Planner Button -->
                 <button id="btn-open-budget-modal" type="button" class="inline-flex items-center space-x-1.5 px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 shadow-sm transition-all" title="Configure Monthly Income & Category Budgets">
                     <i class="fa-solid fa-sliders text-brand-600"></i>
-                    <span class="hidden md:inline">Budget Planner</span>
+                    <span class="hidden md:inline">Budget</span>
                 </button>
 
                 <!-- Voice Assistant Trigger Button (Header) -->
@@ -74,7 +74,19 @@
                         <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-600"></span>
                     </span>
                     <i class="fa-solid fa-microphone text-indigo-600"></i>
-                    <span class="hidden md:inline">Voice Input</span>
+                    <span class="hidden md:inline">Voice</span>
+                </button>
+
+                <!-- Email Monthly Report Button -->
+                <button id="btn-email-report" type="button" class="inline-flex items-center space-x-1.5 px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 shadow-sm transition-all" title="Email Monthly Report to sarveshsantosh2007s@gmail.com">
+                    <i class="fa-solid fa-paper-plane text-indigo-600"></i>
+                    <span class="hidden lg:inline">Email Report</span>
+                </button>
+
+                <!-- Reset Database Danger Button -->
+                <button id="btn-open-reset-modal" type="button" class="inline-flex items-center space-x-1.5 px-2.5 sm:px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 shadow-sm transition-all" title="Reset Database (Password Protected)">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
+                    <span class="hidden xl:inline">Reset DB</span>
                 </button>
 
                 <!-- Export Dropdown -->
@@ -206,7 +218,6 @@
 
                 <!-- Interactive Calendar Card -->
                 <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm">
-                    <!-- Calendar Header with Controls -->
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center space-x-2">
                             <i class="fa-regular fa-calendar-days text-brand-600 text-lg"></i>
@@ -227,7 +238,6 @@
                         </div>
                     </div>
 
-                    <!-- Days of Week Header -->
                     <div class="grid grid-cols-7 text-center text-[11px] font-bold text-slate-400 uppercase py-2 border-b border-slate-100 mb-2">
                         <span>Sun</span>
                         <span>Mon</span>
@@ -238,7 +248,6 @@
                         <span>Sat</span>
                     </div>
 
-                    <!-- Calendar Grid Container -->
                     <div id="calendar-grid" class="grid grid-cols-7 gap-1 sm:gap-1.5">
                         <!-- Populated by JavaScript -->
                     </div>
@@ -304,7 +313,6 @@
             <div class="lg:col-span-5 space-y-4">
                 <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm sticky top-24">
                     
-                    <!-- Panel Header -->
                     <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                         <div>
                             <div class="flex items-center space-x-2">
@@ -330,7 +338,6 @@
                         </div>
                     </div>
 
-                    <!-- Daily Summary Pill -->
                     <div class="bg-slate-50 rounded-xl p-3 my-3 flex items-center justify-between border border-slate-100">
                         <div class="text-xs text-slate-500">
                             <span>Total Filtered:</span>
@@ -341,373 +348,173 @@
                         </div>
                     </div>
 
-                    <!-- Expenses List Container -->
                     <div id="daily-expenses-list" class="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
                         <!-- Populated by JavaScript -->
                     </div>
 
-                    <!-- Empty State -->
                     <div id="daily-empty-state" class="hidden text-center py-10 px-4">
-                        <div class="h-12 w-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3 text-lg">
-                            <i class="fa-solid fa-receipt"></i>
+                        <div class="h-12 w-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                            <i class="fa-solid fa-receipt text-xl"></i>
                         </div>
-                        <h3 class="text-sm font-bold text-slate-700 mb-1">No expenses found</h3>
-                        <p class="text-xs text-slate-400 max-w-xs mx-auto mb-4">
-                            No records matching this date or category.
-                        </p>
-                        <div class="flex items-center justify-center space-x-2">
-                            <button id="btn-empty-add" type="button" class="inline-flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-all">
-                                <i class="fa-solid fa-plus text-xs"></i>
-                                <span>Manual Add</span>
-                            </button>
-                            <button id="btn-empty-voice" type="button" class="inline-flex items-center space-x-1 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-all">
-                                <i class="fa-solid fa-microphone text-xs"></i>
-                                <span>Voice Add</span>
-                            </button>
-                        </div>
+                        <p class="text-sm font-semibold text-slate-600">No expenses recorded</p>
+                        <p class="text-xs text-slate-400 mt-1">Tap + Add Expense or use Voice to log an entry.</p>
                     </div>
-
                 </div>
             </div>
 
         </section>
+
     </main>
 
-    <!-- Floating Action Button (FAB) for Mobile/Quick Voice Input -->
-    <button id="btn-voice-fab" type="button" class="fab-voice-btn fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-500 text-white flex items-center justify-center text-xl shadow-xl transition-all" title="Click to speak expense">
-        <i class="fa-solid fa-microphone" id="fab-mic-icon"></i>
-    </button>
+    <!-- Floating Action Button for Voice Entry -->
+    <div class="fixed bottom-6 right-6 z-40">
+        <button id="btn-voice-fab" type="button" class="group relative h-14 w-14 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-500 text-white shadow-xl shadow-brand-500/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all focus:outline-none" title="Quick voice expense entry">
+            <span id="voice-fab-pulse" class="hidden absolute inset-0 rounded-full bg-indigo-400 animate-ping opacity-60"></span>
+            <i class="fa-solid fa-microphone text-xl group-hover:scale-110 transition-transform"></i>
+        </button>
+    </div>
 
-    <!-- ======================================================================= -->
-    <!-- Live Voice Recognition Banner / Active Listening Drawer                 -->
-    <!-- ======================================================================= -->
-    <div id="voice-listening-overlay" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 hidden max-w-lg w-[90%] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-brand-500 p-5 animate-scale-up">
-        <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center space-x-3">
-                <div class="flex items-center space-x-1 h-6">
-                    <span class="wave-bar"></span>
-                    <span class="wave-bar"></span>
-                    <span class="wave-bar"></span>
-                    <span class="wave-bar"></span>
-                    <span class="wave-bar"></span>
+    <!-- Voice Listening Active Overlay Banner -->
+    <div id="voice-listening-overlay" class="hidden fixed inset-x-0 bottom-0 bg-slate-950/95 backdrop-blur-md text-white border-t border-indigo-500/30 p-4 z-50 shadow-2xl transition-all">
+        <div class="max-w-3xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="relative flex items-center justify-center h-10 w-10 rounded-full bg-rose-500/20 text-rose-500">
+                    <span class="animate-ping absolute h-8 w-8 rounded-full bg-rose-500 opacity-75"></span>
+                    <i class="fa-solid fa-microphone-lines text-lg"></i>
                 </div>
                 <div>
-                    <h4 class="text-xs font-bold text-brand-700 uppercase tracking-wider flex items-center space-x-1.5">
-                        <span class="h-2 w-2 rounded-full bg-rose-500 animate-pulse"></span>
-                        <span>Listening... Speak now</span>
-                    </h4>
-                    <p class="text-[11px] text-slate-500">e.g. "Paal 30 rupees", "Petrol 200 via UPI", "EB bill 1200"</p>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs uppercase font-extrabold tracking-wider text-rose-400">Listening...</span>
+                        <span class="text-xs text-slate-400">(Speak item, amount, category in Tamil/English)</span>
+                    </div>
+                    <p id="voice-live-transcript" class="text-sm font-medium text-slate-100 mt-0.5 truncate max-w-md sm:max-w-xl">
+                        Say "Petrol 200", "Paal 30", or "EB bill 1450"...
+                    </p>
                 </div>
             </div>
-            <button id="btn-stop-voice" type="button" class="text-xs px-2.5 py-1 font-semibold rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-all">
-                Stop
-            </button>
-        </div>
-
-        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 min-h-[50px] flex items-center">
-            <p id="voice-live-transcript" class="text-xs sm:text-sm text-slate-800 font-medium italic">
-                Waiting for speech...
-            </p>
-        </div>
-
-        <div class="flex items-center justify-between mt-3 text-[11px] text-slate-400">
-            <span>Supports English & Tanglish (7 Categories)</span>
-            <button id="btn-cancel-voice" type="button" class="hover:text-slate-600 underline">
-                Cancel
-            </button>
+            <div class="flex items-center space-x-2">
+                <button id="btn-stop-voice" type="button" class="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow transition-all">
+                    Done
+                </button>
+                <button id="btn-cancel-voice" type="button" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all">
+                    Cancel
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- ======================================================================= -->
-    <!-- Modal: Monthly Income & Budget Settings Planner                         -->
-    <!-- ======================================================================= -->
-    <div id="modal-budget-settings" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="relative bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full p-6 animate-scale-up">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+    <!-- Modal: Monthly Budget Settings -->
+    <div id="modal-budget-settings" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 transform transition-all max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div class="flex items-center space-x-2.5">
-                    <div class="h-9 w-9 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-sm shadow-sm">
+                    <div class="h-9 w-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
                         <i class="fa-solid fa-sliders"></i>
                     </div>
                     <div>
                         <h3 class="text-base font-bold text-slate-900">Monthly Budget & Income Planner</h3>
-                        <span class="text-[11px] text-slate-500">Configure your target income and category allocations</span>
+                        <p class="text-xs text-slate-400">Configure your target income and category allocations</p>
                     </div>
                 </div>
-                <button id="btn-close-budget-modal" type="button" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-all">
-                    <i class="fa-solid fa-xmark text-sm"></i>
+                <button id="btn-close-budget-modal" type="button" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
 
-            <form id="form-budget-settings" class="space-y-4">
-                <!-- Monthly Income -->
-                <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-3">
-                    <label for="budget-input-income" class="block text-xs font-bold text-blue-900 uppercase tracking-wider mb-1">
+            <form id="form-budget-settings" class="space-y-4 mt-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                         Total Monthly Income (₹) *
                     </label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-blue-500 font-bold text-sm">₹</span>
-                        <input type="number" id="budget-input-income" required min="1" step="0.01" class="w-full pl-8 pr-3 py-2 text-sm font-bold text-slate-900 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 font-bold">₹</span>
+                        <input type="number" step="0.01" min="0" id="input-monthly-income" required class="w-full pl-8 pr-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-slate-800">
                     </div>
                 </div>
 
-                <!-- 7 Category Allocations -->
-                <div>
-                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Category Allocations (₹)</h4>
-                    <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
-                        <!-- Food -->
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="font-medium text-slate-700 flex items-center space-x-1.5">
-                                <i class="fa-solid fa-utensils text-amber-500 w-4"></i>
-                                <span>Food</span>
-                            </span>
-                            <input type="number" id="budget-cat-Food" min="0" step="0.01" class="w-32 px-2 py-1 text-xs border border-slate-300 rounded-lg text-right font-semibold">
-                        </div>
-                        <!-- Groceries -->
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="font-medium text-slate-700 flex items-center space-x-1.5">
-                                <i class="fa-solid fa-basket-shopping text-emerald-500 w-4"></i>
-                                <span>Groceries</span>
-                            </span>
-                            <input type="number" id="budget-cat-Groceries" min="0" step="0.01" class="w-32 px-2 py-1 text-xs border border-slate-300 rounded-lg text-right font-semibold">
-                        </div>
-                        <!-- Bike & Car -->
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="font-medium text-slate-700 flex items-center space-x-1.5">
-                                <i class="fa-solid fa-motorcycle text-blue-500 w-4"></i>
-                                <span>Bike & Car</span>
-                            </span>
-                            <input type="number" id="budget-cat-Bike-Car" min="0" step="0.01" class="w-32 px-2 py-1 text-xs border border-slate-300 rounded-lg text-right font-semibold">
-                        </div>
-                        <!-- Bills & Utilities -->
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="font-medium text-slate-700 flex items-center space-x-1.5">
-                                <i class="fa-solid fa-bolt text-purple-500 w-4"></i>
-                                <span>Bills & Utilities</span>
-                            </span>
-                            <input type="number" id="budget-cat-Bills-Utilities" min="0" step="0.01" class="w-32 px-2 py-1 text-xs border border-slate-300 rounded-lg text-right font-semibold">
-                        </div>
-                        <!-- Stationery & Office -->
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="font-medium text-slate-700 flex items-center space-x-1.5">
-                                <i class="fa-solid fa-pen-ruler text-sky-500 w-4"></i>
-                                <span>Stationery & Office</span>
-                            </span>
-                            <input type="number" id="budget-cat-Stationery-Office" min="0" step="0.01" class="w-32 px-2 py-1 text-xs border border-slate-300 rounded-lg text-right font-semibold">
-                        </div>
-                        <!-- Medical & Healthcare -->
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="font-medium text-slate-700 flex items-center space-x-1.5">
-                                <i class="fa-solid fa-heart-pulse text-rose-500 w-4"></i>
-                                <span>Medical & Healthcare</span>
-                            </span>
-                            <input type="number" id="budget-cat-Medical-Healthcare" min="0" step="0.01" class="w-32 px-2 py-1 text-xs border border-slate-300 rounded-lg text-right font-semibold">
-                        </div>
-                        <!-- General & Others -->
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="font-medium text-slate-700 flex items-center space-x-1.5">
-                                <i class="fa-solid fa-coins text-slate-500 w-4"></i>
-                                <span>General & Others</span>
-                            </span>
-                            <input type="number" id="budget-cat-General-Others" min="0" step="0.01" class="w-32 px-2 py-1 text-xs border border-slate-300 rounded-lg text-right font-semibold">
-                        </div>
+                <div class="pt-2 border-t border-slate-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Category Allocations (₹)
+                        </label>
+                    </div>
+                    <div class="space-y-2.5" id="budget-category-inputs-container">
+                        <!-- Populated by app.js -->
                     </div>
                 </div>
 
-                <!-- Budget Allocation Summary Bar -->
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs space-y-1">
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-500">Total Budget Allocated:</span>
-                        <span id="budget-calc-total-allocated" class="font-bold text-slate-900">₹0.00</span>
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 text-xs space-y-1">
+                    <div class="flex justify-between text-slate-600">
+                        <span>Total Budget Allocated:</span>
+                        <strong id="modal-budget-total-allocated" class="font-bold text-slate-800">₹0.00</strong>
                     </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-500">Unallocated / Target Savings:</span>
-                        <span id="budget-calc-savings-buffer" class="font-bold text-emerald-600">₹0.00</span>
+                    <div class="flex justify-between text-slate-600">
+                        <span>Unallocated / Target Savings:</span>
+                        <strong id="modal-budget-unallocated" class="font-bold text-emerald-600">₹0.00</strong>
                     </div>
                 </div>
 
-                <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
-                    <button id="btn-cancel-budget-modal" type="button" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
+                <div class="flex items-center justify-end space-x-2 pt-2">
+                    <button type="button" id="btn-cancel-budget-modal" class="px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:bg-slate-100 transition-all">
                         Cancel
                     </button>
-                    <button id="btn-save-budget-settings" type="submit" class="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-md shadow-brand-600/20 transition-all">
-                        <i class="fa-solid fa-check"></i>
-                        <span>Save Budget</span>
+                    <button type="submit" class="px-4 py-2 text-xs font-bold rounded-xl text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-600/20 transition-all">
+                        <i class="fa-solid fa-check mr-1.5"></i> Save Budget
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- ======================================================================= -->
-    <!-- Modal: Voice Confirmation (Safety Check Flow with 7 Categories)         -->
-    <!-- ======================================================================= -->
-    <div id="modal-voice-confirm" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="relative bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full p-6 animate-scale-up">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                <div class="flex items-center space-x-2.5">
-                    <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 text-white flex items-center justify-center text-sm shadow-md shadow-brand-500/20">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-base font-bold text-slate-900">Confirm Voice Expense</h3>
-                        <span class="text-[11px] text-slate-500">AI parsed entity extraction & classification</span>
-                    </div>
-                </div>
-                <button id="btn-close-voice-confirm" type="button" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-all">
-                    <i class="fa-solid fa-xmark text-sm"></i>
-                </button>
-            </div>
-
-            <!-- Original Spoken Text Preview -->
-            <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 mb-4">
-                <span class="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block mb-1">
-                    <i class="fa-solid fa-microphone text-indigo-500 mr-1"></i>
-                    What you said:
-                </span>
-                <p id="voice-original-text" class="text-xs sm:text-sm font-semibold text-slate-800 italic">
-                    "Paal vanginen 30 rupees"
-                </p>
-            </div>
-
-            <!-- Confirmation Form -->
-            <form id="form-voice-confirm" class="space-y-4">
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label for="voice-input-date" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Date *</label>
-                        <input type="date" id="voice-input-date" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
-                    </div>
-                    <div>
-                        <label for="voice-input-time" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Time</label>
-                        <input type="time" id="voice-input-time" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
-                    </div>
-                </div>
-
-                <!-- Detected Category (7 Buckets) -->
-                <div>
-                    <label for="voice-input-category" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Detected Category *
-                    </label>
-                    <select id="voice-input-category" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all bg-white font-semibold text-slate-800">
-                        <option value="Food">Food (Restaurant, Snacks, Outside food)</option>
-                        <option value="Groceries">Groceries (Milk, Provisions, Vegetables)</option>
-                        <option value="Bike & Car">Bike & Car (Petrol, Diesel, Service, Toll)</option>
-                        <option value="Bills & Utilities">Bills & Utilities (EB, Recharge, WiFi, Gas)</option>
-                        <option value="Stationery & Office">Stationery & Office (Printout, Xerox, Books)</option>
-                        <option value="Medical & Healthcare">Medical & Healthcare (Medicines, Doctor, Tests)</option>
-                        <option value="General & Others">General & Others (Lending, Misc, Cash)</option>
-                    </select>
-                </div>
-
-                <!-- Item / Description -->
-                <div>
-                    <label for="voice-input-item" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Item / Description *</label>
-                    <input type="text" id="voice-input-item" required placeholder="e.g. Milk, Petrol, Xerox..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
-                </div>
-
-                <!-- Amount & Payment Mode -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label for="voice-input-amount" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Amount (₹) *</label>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 font-bold text-sm">₹</span>
-                            <input type="number" id="voice-input-amount" required step="0.01" min="0.01" placeholder="0.00" class="w-full pl-8 pr-3 py-2 text-sm font-bold text-slate-900 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
-                        </div>
-                    </div>
-                    <div>
-                        <label for="voice-input-payment-mode" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Payment Mode *</label>
-                        <select id="voice-input-payment-mode" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all bg-white">
-                            <option value="UPI">UPI (GPay / PhonePe / Paytm)</option>
-                            <option value="Cash">Cash</option>
-                            <option value="Credit Card">Credit Card</option>
-                            <option value="Debit Card">Debit Card</option>
-                            <option value="Net Banking">Net Banking</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Notes -->
-                <div>
-                    <label for="voice-input-notes" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Notes</label>
-                    <input type="text" id="voice-input-notes" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
-                </div>
-
-                <!-- Actions -->
-                <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
-                    <button id="btn-cancel-voice-confirm" type="button" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
-                        Discard
-                    </button>
-                    <button id="btn-save-voice-confirm" type="submit" class="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-md shadow-brand-600/20 transition-all">
-                        <i class="fa-solid fa-check"></i>
-                        <span>Confirm & Save</span>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- ======================================================================= -->
-    <!-- Modal: Quick Add Expense (Manual Form with 7 Categories)                -->
-    <!-- ======================================================================= -->
-    <div id="modal-add-expense" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="relative bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full p-6 animate-scale-up">
-            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
-                <div class="flex items-center space-x-2.5">
-                    <div class="h-8 w-8 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center text-sm">
-                        <i class="fa-solid fa-plus"></i>
+    <!-- Modal: Add Expense (Manual Form - Date Only, No Time) -->
+    <div id="modal-add-expense" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center space-x-2">
+                    <div class="h-8 w-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
+                        <i class="fa-solid fa-receipt"></i>
                     </div>
                     <h3 class="text-base font-bold text-slate-900">Add New Expense</h3>
                 </div>
-                <button id="btn-close-modal" type="button" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-all">
-                    <i class="fa-solid fa-xmark text-sm"></i>
+                <button id="btn-close-add-modal" type="button" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
 
-            <!-- Form -->
-            <form id="form-add-expense" class="space-y-4">
+            <form id="form-add-expense" class="space-y-4 mt-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Item Description *</label>
+                    <input type="text" id="input-item" required placeholder="e.g. Vegetables, Petrol, EB Bill, Xerox" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label for="input-date" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Date *</label>
-                        <input type="date" id="input-date" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Amount (₹) *</label>
+                        <input type="number" step="0.01" min="0.01" id="input-amount" required placeholder="0.00" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold">
                     </div>
                     <div>
-                        <label for="input-time" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Time</label>
-                        <input type="time" id="input-time" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Date (YYYY-MM-DD) *</label>
+                        <input type="date" id="input-date" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500">
                     </div>
                 </div>
 
-                <!-- 7 Categories -->
-                <div>
-                    <label for="input-category" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Category *</label>
-                    <select id="input-category" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all bg-white font-medium">
-                        <option value="Food">Food (Restaurant, Snacks, Outside food)</option>
-                        <option value="Groceries">Groceries (Milk, Provisions, Vegetables)</option>
-                        <option value="Bike & Car">Bike & Car (Petrol, Diesel, Service, Toll)</option>
-                        <option value="Bills & Utilities">Bills & Utilities (EB, Recharge, WiFi, Gas)</option>
-                        <option value="Stationery & Office">Stationery & Office (Printout, Xerox, Books)</option>
-                        <option value="Medical & Healthcare">Medical & Healthcare (Medicines, Doctor, Tests)</option>
-                        <option value="General & Others">General & Others (Lending, Misc, Cash)</option>
-                    </select>
-                </div>
-
-                <!-- Item / Description -->
-                <div>
-                    <label for="input-item" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Item / Description *</label>
-                    <input type="text" id="input-item" required placeholder="e.g. Swiggy Lunch, Milk, Petrol, EB Bill..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
-                </div>
-
-                <!-- Amount & Payment Mode -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label for="input-amount" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Amount (₹) *</label>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 font-bold text-sm">₹</span>
-                            <input type="number" id="input-amount" required step="0.01" min="0.01" placeholder="0.00" class="w-full pl-8 pr-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all font-semibold">
-                        </div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Category *</label>
+                        <select id="input-category" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                            <option value="Food">Food</option>
+                            <option value="Groceries">Groceries</option>
+                            <option value="Bike & Car">Bike & Car</option>
+                            <option value="Bills & Utilities">Bills & Utilities</option>
+                            <option value="Stationery & Office">Stationery & Office</option>
+                            <option value="Medical & Healthcare">Medical & Healthcare</option>
+                            <option value="General & Others">General & Others</option>
+                        </select>
                     </div>
                     <div>
-                        <label for="input-payment-mode" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Payment Mode *</label>
-                        <select id="input-payment-mode" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all bg-white">
-                            <option value="UPI">UPI (GPay / PhonePe / Paytm)</option>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Payment Mode *</label>
+                        <select id="input-payment-mode" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                            <option value="UPI">UPI / GPay</option>
                             <option value="Cash">Cash</option>
                             <option value="Credit Card">Credit Card</option>
                             <option value="Debit Card">Debit Card</option>
@@ -716,29 +523,199 @@
                     </div>
                 </div>
 
-                <!-- Notes -->
                 <div>
-                    <label for="input-notes" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Notes (Optional)</label>
-                    <input type="text" id="input-notes" placeholder="Additional remarks or tags..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Notes (Optional)</label>
+                    <input type="text" id="input-notes" placeholder="Optional context or memo" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500">
                 </div>
 
-                <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
-                    <button id="btn-cancel-modal" type="button" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
-                        Cancel
-                    </button>
-                    <button id="btn-submit-expense" type="submit" class="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-md shadow-brand-600/20 transition-all">
-                        <i class="fa-solid fa-check"></i>
-                        <span>Save Expense</span>
+                <div class="flex items-center justify-end space-x-2 pt-2">
+                    <button type="button" id="btn-cancel-add-modal" class="px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:bg-slate-100 transition-all">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-bold rounded-xl text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-600/20 transition-all">Save Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Voice Confirmation & Editor (Date Only, No Time) -->
+    <div id="modal-voice-confirm" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center space-x-2">
+                    <div class="h-8 w-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">Confirm Voice Entry</h3>
+                        <p class="text-[11px] text-slate-400">Review & edit parsed fields before saving</p>
+                    </div>
+                </div>
+                <button id="btn-close-voice-confirm" type="button" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 my-3">
+                <span class="text-[10px] uppercase font-bold text-indigo-600 tracking-wider">Voice Spoken Transcript:</span>
+                <p id="voice-original-text" class="text-xs text-indigo-950 font-medium italic mt-0.5">"..."</p>
+            </div>
+
+            <form id="form-voice-confirm" class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Item Description *</label>
+                    <input type="text" id="voice-input-item" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Amount (₹) *</label>
+                        <input type="number" step="0.01" min="0.01" id="voice-input-amount" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold text-emerald-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Date (YYYY-MM-DD) *</label>
+                        <input type="date" id="voice-input-date" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Category *</label>
+                        <select id="voice-input-category" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                            <option value="Food">Food</option>
+                            <option value="Groceries">Groceries</option>
+                            <option value="Bike & Car">Bike & Car</option>
+                            <option value="Bills & Utilities">Bills & Utilities</option>
+                            <option value="Stationery & Office">Stationery & Office</option>
+                            <option value="Medical & Healthcare">Medical & Healthcare</option>
+                            <option value="General & Others">General & Others</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Payment Mode *</label>
+                        <select id="voice-input-payment-mode" required class="w-full px-3 py-2 text-sm border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                            <option value="UPI">UPI / GPay</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Credit Card">Credit Card</option>
+                            <option value="Debit Card">Debit Card</option>
+                            <option value="Net Banking">Net Banking</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end space-x-2 pt-2">
+                    <button type="button" id="btn-cancel-voice-confirm" class="px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:bg-slate-100 transition-all">Discard</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition-all">
+                        <i class="fa-solid fa-check mr-1.5"></i> Confirm & Save
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed bottom-5 right-5 space-y-2 pointer-events-none"></div>
+    <!-- Modal: Password-Protected Reset Database -->
+    <div id="modal-reset-db" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-rose-200 transform transition-all">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center space-x-2.5">
+                    <div class="h-9 w-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-base">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">Reset Expense Database</h3>
+                        <p class="text-xs text-rose-600 font-semibold">Danger Zone: Irreversible Action</p>
+                    </div>
+                </div>
+                <button id="btn-close-reset-modal" type="button" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
 
-    <!-- Custom Client-Side Scripts -->
+            <div class="bg-rose-50 border border-rose-200 rounded-xl p-3.5 my-4 text-xs text-rose-900 space-y-1">
+                <p class="font-bold">⚠️ Warning: Permanent Data Deletion</p>
+                <p class="text-rose-700 leading-relaxed">
+                    This will permanently delete all expense records in <code>data/expenses.csv</code>, wipe archives, and reset all budget configurations.
+                </p>
+            </div>
+
+            <form id="form-reset-db" class="space-y-4">
+                <div>
+                    <label for="input-admin-password" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Admin Security Password *
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                            <i class="fa-solid fa-lock text-xs"></i>
+                        </span>
+                        <input type="password" id="input-admin-password" required placeholder="Enter admin password (default: admin123)"
+                            class="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all">
+                    </div>
+                    <span id="reset-error-msg" class="hidden text-xs text-rose-600 font-semibold mt-1 block"></span>
+                </div>
+
+                <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+                    <button id="btn-cancel-reset" type="button" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
+                        Cancel
+                    </button>
+                    <button id="btn-confirm-reset" type="submit" class="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md shadow-rose-600/25 transition-all">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>Confirm Reset</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Email Monthly Financial Report -->
+    <div id="modal-email-report" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center space-x-2.5">
+                    <div class="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-base">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">Email Monthly Report</h3>
+                        <p class="text-xs text-slate-400">Dispatch itemized statement with CSV attachment</p>
+                    </div>
+                </div>
+                <button id="btn-close-email-modal" type="button" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="my-4 space-y-3 text-xs text-slate-600">
+                <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3.5 space-y-1.5">
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Report Month:</span>
+                        <strong id="email-report-month-label" class="text-slate-800 font-bold">Current Month</strong>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Recipient:</span>
+                        <strong class="text-indigo-700 font-bold">sarveshsantosh2007s@gmail.com</strong>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Attachment:</span>
+                        <code id="email-report-attachment-name" class="text-[11px] text-slate-700 font-mono">Expenses.csv</code>
+                    </div>
+                </div>
+                <p class="text-slate-500 text-[11px] leading-relaxed">
+                    The email will contain total spend, monthly net savings, category budgets, and an itemized CSV attachment.
+                </p>
+                <div id="email-status-banner" class="hidden p-2.5 rounded-lg text-xs font-semibold"></div>
+            </div>
+
+            <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+                <button id="btn-cancel-email" type="button" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
+                    Cancel
+                </button>
+                <button id="btn-send-email-confirm" type="button" class="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/25 transition-all">
+                    <i class="fa-solid fa-envelope"></i>
+                    <span>Send Report Now</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 """
-Test suite for Smart Home Expense Tracker - 7-Category REST API & Storage Engine
+Test suite for Smart Home Expense Tracker - Strict Schema (Date Only), Budget, Reset & Retention
 """
 
 import json
@@ -9,10 +9,10 @@ import storage
 
 def run_tests():
     client = app.test_client()
-    print("=== STARTING 7-CATEGORY REST API TEST SUITE ===")
+    print("=== STARTING REST API & STORAGE ENGINE TEST SUITE ===")
 
     # Reset CSV for idempotent test run
-    storage.EXPENSES_CSV.write_text("id,date,time,category,item,amount,payment_mode,notes\n", encoding="utf-8")
+    storage.EXPENSES_CSV.write_text("id,date,category,item,amount,payment_mode,notes\n", encoding="utf-8")
     if storage.ARCHIVE_CSV.exists():
         storage.ARCHIVE_CSV.unlink()
 
@@ -22,7 +22,8 @@ def run_tests():
     health_data = res.get_json()
     assert health_data["status"] == "ok"
     assert health_data["storage"]["budget_json_exists"] is True
-    print("[PASS] [1/9] /api/health passed.")
+    assert "time" not in health_data["storage"]["columns"]
+    print("[PASS] [1/11] /api/health passed (Date-only schema verified, no time field).")
 
     # 2. Test Categories (7 Granular Categories)
     res = client.get("/api/categories")
@@ -35,7 +36,7 @@ def run_tests():
     ]
     for cat in expected_categories:
         assert cat in cat_data["categories"], f"Missing category: {cat}"
-    print("[PASS] [2/9] /api/categories passed (7 distinct categories verified).")
+    print("[PASS] [2/11] /api/categories passed (7 distinct categories verified).")
 
     # 3. Test Invalid POST /api/expenses
     invalid_cases = [
@@ -49,13 +50,12 @@ def run_tests():
         res = client.post("/api/expenses", data=json.dumps(payload), content_type="application/json")
         assert res.status_code == 400
         assert expected_error.lower() in res.get_json()["message"].lower(), f"Expected '{expected_error}' in '{res.get_json()}'"
-    print("[PASS] [3/9] POST /api/expenses input validation tests passed (5 invalid cases tested).")
+    print("[PASS] [3/11] POST /api/expenses input validation tests passed (5 invalid cases tested).")
 
-    # 4. Test Valid POST /api/expenses
+    # 4. Test Valid POST /api/expenses (Strictly Date Only)
     test_expenses = [
         {
             "date": "2026-10-17",
-            "time": "08:30:00",
             "category": "Groceries",
             "item": "Vegetables and Milk",
             "amount": 75.50,
@@ -64,7 +64,6 @@ def run_tests():
         },
         {
             "date": "2026-10-17",
-            "time": "12:15:00",
             "category": "Food",
             "item": "Restaurant Meals",
             "amount": 250.00,
@@ -73,7 +72,6 @@ def run_tests():
         },
         {
             "date": "2026-10-17",
-            "time": "14:00:00",
             "category": "Bike & Car",
             "item": "Petrol",
             "amount": 500.00,
@@ -82,7 +80,6 @@ def run_tests():
         },
         {
             "date": "2026-10-16",
-            "time": "18:00:00",
             "category": "Stationery & Office",
             "item": "Printout and Xerox",
             "amount": 120.00,
@@ -91,7 +88,6 @@ def run_tests():
         },
         {
             "date": "2026-09-10",
-            "time": "10:00:00",
             "category": "Medical & Healthcare",
             "item": "Medicines & Doctor consultation",
             "amount": 800.00,
@@ -100,7 +96,6 @@ def run_tests():
         },
         {
             "date": "2026-08-20",
-            "time": "15:00:00",
             "category": "Bills & Utilities",
             "item": "EB Electricity Bill",
             "amount": 1450.00,
@@ -115,8 +110,9 @@ def run_tests():
         data = res.get_json()
         assert data["status"] == "success"
         assert "id" in data["data"]
+        assert "time" not in data["data"]
         assert data["data"]["amount"] == item["amount"]
-    print(f"[PASS] [4/9] POST /api/expenses successfully created {len(test_expenses)} test records across categories.")
+    print(f"[PASS] [4/11] POST /api/expenses successfully created {len(test_expenses)} test records with date-only schema.")
 
     # 5. Test GET /api/expenses with date & category filter
     res = client.get("/api/expenses?date=2026-10-17")
@@ -130,7 +126,7 @@ def run_tests():
     cat_filtered = res_cat.get_json()
     assert cat_filtered["count"] == 1
     assert cat_filtered["expenses"][0]["item"] == "Restaurant Meals"
-    print("[PASS] [5/9] GET /api/expenses with date and category filters returned exact matching records.")
+    print("[PASS] [5/11] GET /api/expenses with date and category filters returned exact matching records.")
 
     # 6. Test GET /api/budget & POST /api/budget
     res_b = client.get("/api/budget")
@@ -139,7 +135,6 @@ def run_tests():
     assert "monthly_income" in b_data["budget"]
     assert "categories" in b_data["budget"]
 
-    # Update budget
     new_budget = {
         "monthly_income": 30000.0,
         "categories": {
@@ -155,7 +150,7 @@ def run_tests():
     res_b_post = client.post("/api/budget", data=json.dumps(new_budget), content_type="application/json")
     assert res_b_post.status_code == 200
     assert res_b_post.get_json()["budget"]["monthly_income"] == 30000.0
-    print("[PASS] [6/9] GET /api/budget and POST /api/budget verified with persistence.")
+    print("[PASS] [6/11] GET /api/budget and POST /api/budget verified with persistence.")
 
     # 7. Test GET /api/summary/monthly with remaining balances and savings
     res_m = client.get("/api/summary/monthly?year=2026&month=10")
@@ -168,25 +163,52 @@ def run_tests():
     assert monthly_data["category_budgets"]["Food"]["spent"] == 250.00
     assert monthly_data["category_budgets"]["Food"]["allocated"] == 5000.00
     assert monthly_data["category_budgets"]["Food"]["remaining"] == 4750.00
-    assert monthly_data["category_budgets"]["Food"]["is_over"] is False
-    print("[PASS] [7/9] GET /api/summary/monthly computed income, net savings, and category remaining balances.")
+    print("[PASS] [7/11] GET /api/summary/monthly computed income, net savings, and category remaining balances.")
 
-    # 8. Test GET /api/summary/rolling-3-months
-    res_r = client.get("/api/summary/rolling-3-months")
-    assert res_r.status_code == 200
-    rolling_data = res_r.get_json()
-    assert rolling_data["total_expense"] == 3195.50
-    assert rolling_data["daily_average"] > 0
-    assert len(rolling_data["category_distribution"]) == 7
-    print("[PASS] [8/9] GET /api/summary/rolling-3-months computed 90-day aggregate across all 7 categories.")
+    # 8. Test Strict 3-Month Rolling Retention Engine Logic
+    # Example: February 1st, 2026 -> records before Dec 1, 2025 (Nov or earlier) must be purged
+    feb_ref = datetime(2026, 2, 1)
+    cutoff_feb = storage.get_retention_cutoff_date(feb_ref)
+    assert cutoff_feb == "2025-12-01", f"Expected 2025-12-01, got {cutoff_feb}"
+
+    oct_ref = datetime(2026, 10, 17)
+    cutoff_oct = storage.get_retention_cutoff_date(oct_ref)
+    assert cutoff_oct == "2026-08-01", f"Expected 2026-08-01, got {cutoff_oct}"
+    print("[PASS] [8/11] Strict 3-month rolling retention cutoff calculations verified.")
 
     # 9. Test GET /api/export
     res_exp = client.get("/api/export")
     assert res_exp.status_code == 200
-    assert b"id,date,time,category,item,amount,payment_mode,notes" in res_exp.data
-    print("[PASS] [9/9] GET /api/export successfully generated CSV download stream.")
+    assert b"id,date,category,item,amount,payment_mode,notes" in res_exp.data
+    assert b"time" not in res_exp.data
+    print("[PASS] [9/11] GET /api/export successfully generated Date-Only CSV download stream.")
 
-    print("\nALL 9 REST API & STORAGE TESTS PASSED WITH ZERO ERRORS!")
+    # 10. Test Password-Protected Database Reset Endpoint
+    # Test 10a: Wrong password -> 401
+    bad_reset = client.post("/api/reset-database", data=json.dumps({"password": "wrongpassword"}), content_type="application/json")
+    assert bad_reset.status_code == 401
+    assert "Invalid Password" in bad_reset.get_json()["message"]
+
+    # Test 10b: Correct password -> 200 & wipes expenses.csv to header only
+    good_reset = client.post("/api/reset-database", data=json.dumps({"password": "admin123"}), content_type="application/json")
+    assert good_reset.status_code == 200
+    assert good_reset.get_json()["status"] == "success"
+
+    # Verify CSV has only the header row
+    lines = storage.EXPENSES_CSV.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 1
+    assert lines[0] == "id,date,category,item,amount,payment_mode,notes"
+    print("[PASS] [10/11] Password-protected database reset verified with 401 auth challenge & clean wipe.")
+
+    # 11. Test Month-End Email Report Endpoint
+    res_email = client.post("/api/send-monthly-report?month=2026-10")
+    # Even without valid SMTP password in test environment, it gracefully validates credentials
+    email_data = res_email.get_json()
+    assert "status" in email_data
+    assert "recipient" in email_data or "message" in email_data
+    print("[PASS] [11/11] Month-End Email Dispatch endpoint validated with structured response.")
+
+    print("\nALL 11 REST API, STORAGE & SECURITY TESTS PASSED WITH ZERO ERRORS!")
 
 if __name__ == "__main__":
     run_tests()

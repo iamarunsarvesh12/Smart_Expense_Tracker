@@ -10,8 +10,9 @@ __pycache__/
 *$py.class
 *.so
 
-# Environment variables
+# Environment variables & secrets
 .env
+.env.local
 
 # System & IDE files
 .DS_Store
@@ -22,5 +23,6 @@ Thumbs.db
 # Logs
 *.log
 
-# Temporary export files
+# Temporary export files & dispatch markers
 data/expenses_export_*
+data/last_dispatched.json

@@ -1,8 +1,13 @@
 """
 Smart Home Expense Tracker - Application Entry Point (Pure Python Standard Library)
-Supports 7 granular expense categories, monthly income & budget allocations,
-remaining balances & net savings, and voice NLP extraction.
 Strictly zero Pandas / zero OpenPyXL - 100% Python 3.14+ compatible.
+Features:
+- 7 Granular Expense Categories (Date only, no time field)
+- Monthly Income & Category Budgeting Engine with Net Savings Tracking
+- Month-End Email Dispatch to sarveshsantosh2007s@gmail.com with attached CSV
+- Password-Protected Database Reset Endpoint
+- Strict 3-Month Rolling Retention Engine
+- AI Voice Tanglish/English Speech NLP Parser
 """
 
 import os
@@ -12,6 +17,7 @@ from dotenv import load_dotenv
 
 import storage
 import voice_parser
+import email_service
 
 # Load environment variables
 load_dotenv()
@@ -32,7 +38,9 @@ storage.init_storage()
 def index():
     """
     Render the frontend dashboard.
+    Triggers background check for month-end email auto-dispatch.
     """
+    email_service.check_and_trigger_month_end_auto_dispatch()
     return render_template("index.html")
 
 
@@ -48,12 +56,13 @@ def health_check():
     return jsonify({
         "status": "ok",
         "app": "Smart Home Expense Tracker",
-        "version": "2.0.0",
+        "version": "2.1.0",
         "engine": "Pure Python Standard Library (No Pandas / No OpenPyXL)",
         "storage": {
             "csv_exists": storage.EXPENSES_CSV.exists(),
             "budget_json_exists": storage.BUDGET_JSON.exists(),
-            "valid_categories": storage.VALID_CATEGORIES
+            "valid_categories": storage.VALID_CATEGORIES,
+            "columns": storage.COLUMNS
         }
     }), 200
 
@@ -146,14 +155,14 @@ def parse_voice():
 
 
 # ---------------------------------------------------------------------------
-# Core Expense API Endpoints
+# Core Expense API Endpoints (Date Only, No Time)
 # ---------------------------------------------------------------------------
 
 @app.route("/api/expenses", methods=["POST"])
 def create_expense():
     """
     Create a new expense entry.
-    Accepts JSON payload: { date, time (optional), category, item, amount, payment_mode, notes }
+    Accepts JSON payload: { date, category, item, amount, payment_mode, notes }
     """
     if not request.is_json:
         return jsonify({
@@ -169,6 +178,9 @@ def create_expense():
             "status": "error",
             "message": error_msg
         }), 400
+
+    # Auto-check month-end email dispatch in background
+    email_service.check_and_trigger_month_end_auto_dispatch()
 
     return jsonify({
         "status": "success",
@@ -266,6 +278,81 @@ def export_expenses():
         download_name=f"expenses_{timestamp}.csv",
         mimetype="text/csv"
     )
+
+
+# ---------------------------------------------------------------------------
+# Month-End Email Dispatch Endpoint
+# ---------------------------------------------------------------------------
+
+@app.route("/api/send-monthly-report", methods=["POST"])
+def send_monthly_report_route():
+    """
+    Dispatch month-end financial summary and attached Expenses_<YYYY-MM>.csv
+    directly to configured mail id (sarveshsantosh2007s@gmail.com).
+    Query param: `month=YYYY-MM` (defaults to current month).
+    """
+    now = datetime.now()
+    month_param = request.args.get("month", now.strftime("%Y-%m")).strip()
+    recipient_param = request.args.get("recipient")
+
+    success, message, meta = email_service.send_monthly_report(
+        month_str=month_param,
+        recipient=recipient_param
+    )
+
+    if not success:
+        return jsonify({
+            "status": "error",
+            "message": message,
+            **meta
+        }), 400
+
+    return jsonify({
+        "status": "success",
+        "message": message,
+        **meta
+    }), 200
+
+
+# ---------------------------------------------------------------------------
+# Password-Protected Database Reset Endpoint
+# ---------------------------------------------------------------------------
+
+@app.route("/api/reset-database", methods=["POST"])
+def reset_database_route():
+    """
+    Password-protected database reset.
+    Truncates data/expenses.csv (leaving only the header row), clears archives,
+    and resets default budget settings.
+    Requires JSON: { "password": "..." }
+    """
+    if not request.is_json:
+        return jsonify({
+            "status": "error",
+            "message": "Request body must be JSON."
+        }), 400
+
+    payload = request.get_json()
+    provided_password = str(payload.get("password", "")).strip()
+    admin_password = os.getenv("ADMIN_RESET_PASSWORD", "admin123").strip()
+
+    if not provided_password or provided_password != admin_password:
+        return jsonify({
+            "status": "error",
+            "message": "Invalid Password."
+        }), 401
+
+    success, msg = storage.reset_database()
+    if not success:
+        return jsonify({
+            "status": "error",
+            "message": msg
+        }), 500
+
+    return jsonify({
+        "status": "success",
+        "message": msg
+    }), 200
 
 
 # ---------------------------------------------------------------------------
