@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Smart Home Expense Tracker - Modern household budget management with AI Voice Assistant, interactive calendar, category breakdowns, and expense analytics.">
+    <title>Smart Home Expense Tracker | Dashboard & Voice Assistant</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome 6 Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white relative">
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-slate-200 bg-white/95 backdrop-blur sticky top-0 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- App Identity -->
+            <div class="flex items-center space-x-3">
+                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+                    <i class="fa-solid fa-house-laptop text-lg"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-lg font-bold text-slate-900 tracking-tight">Smart Expense</span>
+                        <span id="current-month-badge" class="text-xs px-2.5 py-0.5 font-medium bg-brand-50 text-brand-700 rounded-full border border-brand-200">
+                            Loading...
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 hidden sm:block">AI Voice & Smart Household Expense Engine</p>
+                </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <!-- Voice Assistant Trigger Button (Header) -->
+                <button id="btn-voice-header" type="button" class="relative group inline-flex items-center space-x-2 px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 shadow-sm transition-all" title="Start voice expense entry">
+                    <span id="voice-header-pulse" class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-600"></span>
+                    </span>
+                    <i class="fa-solid fa-microphone text-indigo-600"></i>
+                    <span class="hidden md:inline">Voice Assistant</span>
+                    <span class="text-[10px] bg-indigo-200/80 text-indigo-900 px-1.5 py-0.2 rounded font-semibold hidden lg:inline">AI</span>
+                </button>
+
+                <!-- Export Dropdown -->
+                <div class="relative inline-block text-left" id="export-dropdown-wrapper">
+                    <button id="btn-export-menu" type="button" class="inline-flex items-center space-x-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-xl text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 shadow-sm transition-all">
+                        <i class="fa-solid fa-file-export text-slate-500"></i>
+                        <span class="hidden sm:inline">Export</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 ml-1"></i>
+                    </button>
+                    <!-- Dropdown Menu -->
+                    <div id="export-menu" class="hidden absolute right-0 mt-2 w-44 rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-slate-100 z-50">
+                        <div class="py-1">
+                            <a href="/api/export?format=csv" download class="group flex items-center px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-brand-600">
+                                <i class="fa-solid fa-file-csv mr-2 text-emerald-600"></i>
+                                Export as CSV
+                            </a>
+                            <a href="/api/export?format=excel" download class="group flex items-center px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-brand-600">
+                                <i class="fa-solid fa-file-excel mr-2 text-green-600"></i>
+                                Export as Excel (.xlsx)
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Expense Button (Manual Modal) -->
+                <button id="btn-open-add-modal" type="button" class="inline-flex items-center space-x-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-600/25 transition-all">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Add Expense</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Top Stat Cards (3 Cards) -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+            <!-- Card 1: Total Spent This Month -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">This Month's Spend</span>
+                    <div class="h-9 w-9 rounded-xl bg-indigo-50 text-brand-600 flex items-center justify-center">
+                        <i class="fa-solid fa-wallet text-base"></i>
+                    </div>
+                </div>
+                <div class="flex items-baseline space-x-2">
+                    <span id="stat-month-total" class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">₹0.00</span>
+                </div>
+                <div class="mt-2 text-xs text-slate-500 flex items-center space-x-1">
+                    <i class="fa-regular fa-calendar-check text-slate-400"></i>
+                    <span id="stat-month-transactions">0 transactions recorded</span>
+                </div>
+            </div>
+
+            <!-- Card 2: Today's Total Expense -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Today's Expense</span>
+                    <div class="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <i class="fa-solid fa-clock-rotate-left text-base"></i>
+                    </div>
+                </div>
+                <div class="flex items-baseline space-x-2">
+                    <span id="stat-today-total" class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">₹0.00</span>
+                </div>
+                <div class="mt-2 text-xs text-slate-500 flex items-center space-x-1">
+                    <i class="fa-solid fa-calendar-day text-slate-400"></i>
+                    <span id="stat-today-date">Today</span>
+                </div>
+            </div>
+
+            <!-- Card 3: 3-Month Rolling Average -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">3-Month Rolling Avg</span>
+                    <div class="h-9 w-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                        <i class="fa-solid fa-chart-line text-base"></i>
+                    </div>
+                </div>
+                <div class="flex items-baseline space-x-2">
+                    <span id="stat-rolling-daily-avg" class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">₹0.00</span>
+                    <span class="text-xs font-medium text-slate-400">/ day</span>
+                </div>
+                <div class="mt-2 text-xs text-slate-500 flex items-center space-x-1">
+                    <i class="fa-solid fa-layer-group text-slate-400"></i>
+                    <span id="stat-rolling-total">Total: ₹0.00 over 90 days</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Category Highlights (5 Visual Cards) -->
+        <section>
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-2">
+                    <i class="fa-solid fa-shapes text-brand-600"></i>
+                    <span>Category Spending Split</span>
+                </h2>
+                <span class="text-xs text-slate-500">5 Defined Buckets</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4" id="category-cards-container">
+                <!-- Food & Groceries -->
+                <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="h-8 w-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-basket-shopping"></i>
+                        </div>
+                        <span class="text-xs font-bold text-slate-800 truncate">Food & Groceries</span>
+                    </div>
+                    <div class="text-lg font-extrabold text-slate-900" id="cat-amt-food">₹0.00</div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="cat-bar-food" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <span class="text-[10px] text-slate-400 mt-1 block" id="cat-pct-food">0% of month</span>
+                </div>
+
+                <!-- Fuel & Commute -->
+                <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="h-8 w-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-gas-pump"></i>
+                        </div>
+                        <span class="text-xs font-bold text-slate-800 truncate">Fuel & Commute</span>
+                    </div>
+                    <div class="text-lg font-extrabold text-slate-900" id="cat-amt-fuel">₹0.00</div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="cat-bar-fuel" class="bg-amber-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <span class="text-[10px] text-slate-400 mt-1 block" id="cat-pct-fuel">0% of month</span>
+                </div>
+
+                <!-- Stationery & Office -->
+                <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="h-8 w-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-pen-ruler"></i>
+                        </div>
+                        <span class="text-xs font-bold text-slate-800 truncate">Stationery & Office</span>
+                    </div>
+                    <div class="text-lg font-extrabold text-slate-900" id="cat-amt-stationery">₹0.00</div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="cat-bar-stationery" class="bg-sky-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <span class="text-[10px] text-slate-400 mt-1 block" id="cat-pct-stationery">0% of month</span>
+                </div>
+
+                <!-- Medical & Healthcare -->
+                <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="h-8 w-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-heart-pulse"></i>
+                        </div>
+                        <span class="text-xs font-bold text-slate-800 truncate">Medical & Healthcare</span>
+                    </div>
+                    <div class="text-lg font-extrabold text-slate-900" id="cat-amt-medical">₹0.00</div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="cat-bar-medical" class="bg-rose-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <span class="text-[10px] text-slate-400 mt-1 block" id="cat-pct-medical">0% of month</span>
+                </div>
+
+                <!-- General & Daily Utilities -->
+                <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="h-8 w-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <span class="text-xs font-bold text-slate-800 truncate">General Utilities</span>
+                    </div>
+                    <div class="text-lg font-extrabold text-slate-900" id="cat-amt-utilities">₹0.00</div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="cat-bar-utilities" class="bg-purple-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <span class="text-[10px] text-slate-400 mt-1 block" id="cat-pct-utilities">0% of month</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main 2-Column Section: Calendar & Details -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- Left Column: Interactive Calendar + Analytics (7 of 12 cols) -->
+            <div class="lg:col-span-7 space-y-6">
+
+                <!-- Interactive Calendar Card -->
+                <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm">
+                    <!-- Calendar Header with Controls -->
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-regular fa-calendar-days text-brand-600 text-lg"></i>
+                            <h2 id="calendar-title" class="text-base sm:text-lg font-extrabold text-slate-900">
+                                October 2026
+                            </h2>
+                        </div>
+                        <div class="flex items-center space-x-1 sm:space-x-2">
+                            <button id="btn-prev-month" type="button" class="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all" title="Previous Month">
+                                <i class="fa-solid fa-chevron-left text-xs"></i>
+                            </button>
+                            <button id="btn-current-month" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all">
+                                Today
+                            </button>
+                            <button id="btn-next-month" type="button" class="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all" title="Next Month">
+                                <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Days of Week Header -->
+                    <div class="grid grid-cols-7 text-center text-[11px] font-bold text-slate-400 uppercase py-2 border-b border-slate-100 mb-2">
+                        <span>Sun</span>
+                        <span>Mon</span>
+                        <span>Tue</span>
+                        <span>Wed</span>
+                        <span>Thu</span>
+                        <span>Fri</span>
+                        <span>Sat</span>
+                    </div>
+
+                    <!-- Calendar Grid Container -->
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-1 sm:gap-1.5">
+                        <!-- Populated by JavaScript -->
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-slate-100 mt-4">
+                        <div class="flex items-center space-x-3">
+                            <span class="inline-flex items-center space-x-1">
+                                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                                <span>Has Expense</span>
+                            </span>
+                            <span class="inline-flex items-center space-x-1">
+                                <span class="h-2 w-2 rounded-full bg-brand-600"></span>
+                                <span>Selected</span>
+                            </span>
+                        </div>
+                        <span>Click any date to view items</span>
+                    </div>
+                </div>
+
+                <!-- Analytics Charts Section -->
+                <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-chart-pie text-brand-600"></i>
+                            <h2 class="text-base font-bold text-slate-900">Spending Analytics</h2>
+                        </div>
+                        <span class="text-xs text-slate-500">Interactive Visualizations</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Chart 1: Category Doughnut Split -->
+                        <div class="flex flex-col items-center">
+                            <h3 class="text-xs font-semibold text-slate-600 uppercase mb-3">Category Breakdown</h3>
+                            <div class="relative w-full max-w-[240px] h-[220px]">
+                                <canvas id="chart-category-doughnut"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Chart 2: Daily Trend Bar Chart -->
+                        <div class="flex flex-col">
+                            <h3 class="text-xs font-semibold text-slate-600 uppercase mb-3">Daily Spending Flow</h3>
+                            <div class="relative w-full h-[220px]">
+                                <canvas id="chart-daily-bars"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Selected Date Expenses Panel (5 of 12 cols) -->
+            <div class="lg:col-span-5 space-y-4">
+                <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm sticky top-24">
+                    
+                    <!-- Selected Date Header -->
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div>
+                            <span class="text-xs font-bold text-brand-600 uppercase tracking-wider block">Selected Date</span>
+                            <h2 id="selected-date-title" class="text-base sm:text-lg font-extrabold text-slate-900">
+                                Saturday, 17 Oct 2026
+                            </h2>
+                        </div>
+                        <button id="btn-add-for-selected-date" type="button" class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-lg border border-brand-200 transition-all">
+                            <i class="fa-solid fa-plus text-[10px]"></i>
+                            <span>Add Item</span>
+                        </button>
+                    </div>
+
+                    <!-- Daily Summary Pill -->
+                    <div class="bg-slate-50 rounded-xl p-3 my-3 flex items-center justify-between border border-slate-100">
+                        <div class="text-xs text-slate-500">
+                            <span>Total Spent:</span>
+                            <span id="selected-date-count" class="font-semibold text-slate-700 ml-1">(0 items)</span>
+                        </div>
+                        <div id="selected-date-total" class="text-xl font-black text-slate-900">
+                            ₹0.00
+                        </div>
+                    </div>
+
+                    <!-- Expenses List Container -->
+                    <div id="daily-expenses-list" class="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
+                        <!-- Populated by app.js -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="daily-empty-state" class="hidden text-center py-10 px-4">
+                        <div class="h-12 w-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3 text-lg">
+                            <i class="fa-solid fa-receipt"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-slate-700 mb-1">No expenses recorded</h3>
+                        <p class="text-xs text-slate-400 max-w-xs mx-auto mb-4">
+                            You haven't added any expenses for this day yet. Try clicking the mic to speak!
+                        </p>
+                        <div class="flex items-center justify-center space-x-2">
+                            <button id="btn-empty-add" type="button" class="inline-flex items-center space-x-2 px-3 py-1.5 text-xs font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-all">
+                                <i class="fa-solid fa-plus text-xs"></i>
+                                <span>Manual Entry</span>
+                            </button>
+                            <button id="btn-empty-voice" type="button" class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-all">
+                                <i class="fa-solid fa-microphone text-xs"></i>
+                                <span>Voice Add</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Floating Action Button (FAB) for Mobile/Quick Voice Input -->
+    <button id="btn-voice-fab" type="button" class="fab-voice-btn fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-500 text-white flex items-center justify-center text-xl shadow-xl transition-all" title="Click to speak expense">
+        <i class="fa-solid fa-microphone" id="fab-mic-icon"></i>
+    </button>
+
+    <!-- ======================================================================= -->
+    <!-- Live Voice Recognition Banner / Active Listening Drawer                 -->
+    <!-- ======================================================================= -->
+    <div id="voice-listening-overlay" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 hidden max-w-lg w-[90%] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-brand-500 p-5 animate-scale-up">
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-1 h-6">
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-brand-700 uppercase tracking-wider flex items-center space-x-1.5">
+                        <span class="h-2 w-2 rounded-full bg-rose-500 animate-pulse"></span>
+                        <span>Listening... Speak now</span>
+                    </h4>
+                    <p class="text-[11px] text-slate-500">e.g. "Paal 30 rupees" or "Petrol 200 via UPI"</p>
+                </div>
+            </div>
+            <button id="btn-stop-voice" type="button" class="text-xs px-2.5 py-1 font-semibold rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-all">
+                Stop
+            </button>
+        </div>
+
+        <!-- Live transcript box -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 min-h-[50px] flex items-center">
+            <p id="voice-live-transcript" class="text-xs sm:text-sm text-slate-800 font-medium italic">
+                Waiting for speech...
+            </p>
+        </div>
+
+        <div class="flex items-center justify-between mt-3 text-[11px] text-slate-400">
+            <span>Supports English & Tanglish</span>
+            <button id="btn-cancel-voice" type="button" class="hover:text-slate-600 underline">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- Modal: Voice Confirmation (Safety Check Flow)                           -->
+    <!-- ======================================================================= -->
+    <div id="modal-voice-confirm" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="relative bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full p-6 animate-scale-up">
+            <!-- Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <div class="flex items-center space-x-2.5">
+                    <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 text-white flex items-center justify-center text-sm shadow-md shadow-brand-500/20">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">Confirm Voice Expense</h3>
+                        <span class="text-[11px] text-slate-500">AI parsed entity extraction & classification</span>
+                    </div>
+                </div>
+                <button id="btn-close-voice-confirm" type="button" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-all">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Original Spoken Text Preview -->
+            <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 mb-4">
+                <span class="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block mb-1">
+                    <i class="fa-solid fa-microphone text-indigo-500 mr-1"></i>
+                    What you said:
+                </span>
+                <p id="voice-original-text" class="text-xs sm:text-sm font-semibold text-slate-800 italic">
+                    "Paal vanginen 30 rupees"
+                </p>
+            </div>
+
+            <!-- Confirmation Form -->
+            <form id="form-voice-confirm" class="space-y-4">
+                <!-- Date & Time Row -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="voice-input-date" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Date *</label>
+                        <input type="date" id="voice-input-date" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                    </div>
+                    <div>
+                        <label for="voice-input-time" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Time</label>
+                        <input type="time" id="voice-input-time" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                    </div>
+                </div>
+
+                <!-- Detected Category -->
+                <div>
+                    <label for="voice-input-category" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Detected Category *
+                    </label>
+                    <select id="voice-input-category" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all bg-white font-semibold text-slate-800">
+                        <option value="Food & Groceries">Food & Groceries</option>
+                        <option value="Fuel & Commute">Fuel & Commute</option>
+                        <option value="Stationery & Office">Stationery & Office</option>
+                        <option value="Medical & Healthcare">Medical & Healthcare</option>
+                        <option value="General & Daily Utilities">General & Daily Utilities</option>
+                    </select>
+                </div>
+
+                <!-- Item / Description -->
+                <div>
+                    <label for="voice-input-item" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Item / Description *</label>
+                    <input type="text" id="voice-input-item" required placeholder="e.g. Paal, Petrol, Xerox..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                </div>
+
+                <!-- Amount (₹) & Payment Mode -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label for="voice-input-amount" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Amount (₹) *</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 font-bold text-sm">₹</span>
+                            <input type="number" id="voice-input-amount" required step="0.01" min="0.01" placeholder="0.00" class="w-full pl-8 pr-3 py-2 text-sm font-bold text-slate-900 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="voice-input-payment-mode" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Payment Mode *</label>
+                        <select id="voice-input-payment-mode" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all bg-white">
+                            <option value="UPI">UPI (GPay / PhonePe / Paytm)</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Credit Card">Credit Card</option>
+                            <option value="Debit Card">Debit Card</option>
+                            <option value="Net Banking">Net Banking</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label for="voice-input-notes" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Notes</label>
+                    <input type="text" id="voice-input-notes" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+                    <button id="btn-cancel-voice-confirm" type="button" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
+                        Discard
+                    </button>
+                    <button id="btn-save-voice-confirm" type="submit" class="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-md shadow-brand-600/20 transition-all">
+                        <i class="fa-solid fa-check"></i>
+                        <span>Confirm & Save</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- Modal: Quick Add Expense (Manual Form)                                  -->
+    <!-- ======================================================================= -->
+    <div id="modal-add-expense" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="relative bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full p-6 animate-scale-up">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+                <div class="flex items-center space-x-2.5">
+                    <div class="h-8 w-8 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-plus"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900">Add New Expense</h3>
+                </div>
+                <button id="btn-close-modal" type="button" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-all">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Form -->
+            <form id="form-add-expense" class="space-y-4">
+                <!-- Date & Time Row -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="input-date" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Date *</label>
+                        <input type="date" id="input-date" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                    </div>
+                    <div>
+                        <label for="input-time" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Time</label>
+                        <input type="time" id="input-time" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                    </div>
+                </div>
+
+                <!-- Category -->
+                <div>
+                    <label for="input-category" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Category *</label>
+                    <select id="input-category" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all bg-white">
+                        <option value="Food & Groceries">Food & Groceries</option>
+                        <option value="Fuel & Commute">Fuel & Commute</option>
+                        <option value="Stationery & Office">Stationery & Office</option>
+                        <option value="Medical & Healthcare">Medical & Healthcare</option>
+                        <option value="General & Daily Utilities">General & Daily Utilities</option>
+                    </select>
+                </div>
+
+                <!-- Item / Description -->
+                <div>
+                    <label for="input-item" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Item / Description *</label>
+                    <input type="text" id="input-item" required placeholder="e.g. Milk & Vegetables, Petrol, Printer ink..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                </div>
+
+                <!-- Amount (₹) & Payment Mode -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label for="input-amount" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Amount (₹) *</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 font-bold text-sm">₹</span>
+                            <input type="number" id="input-amount" required step="0.01" min="0.01" placeholder="0.00" class="w-full pl-8 pr-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="input-payment-mode" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Payment Mode *</label>
+                        <select id="input-payment-mode" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all bg-white">
+                            <option value="UPI">UPI (GPay / PhonePe / Paytm)</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Credit Card">Credit Card</option>
+                            <option value="Debit Card">Debit Card</option>
+                            <option value="Net Banking">Net Banking</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label for="input-notes" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Notes (Optional)</label>
+                    <input type="text" id="input-notes" placeholder="Additional remarks or tags..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+                    <button id="btn-cancel-modal" type="button" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
+                        Cancel
+                    </button>
+                    <button id="btn-submit-expense" type="submit" class="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-md shadow-brand-600/20 transition-all">
+                        <i class="fa-solid fa-check"></i>
+                        <span>Save Expense</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 space-y-2 pointer-events-none"></div>
+
+    <!-- Custom Client-Side Scripts -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
