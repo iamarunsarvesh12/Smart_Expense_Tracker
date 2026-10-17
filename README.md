@@ -1,6 +1,6 @@
 # Smart Home Expense Tracker 🎙️📊
 
-A modern, production-grade household expense tracking application built with **Flask**, **Pandas**, **Tailwind CSS**, and browser-native **Web Speech API** for AI-powered Tanglish and English voice expense recording.
+A modern, production-grade household expense tracking application built with **Flask**, Python's native standard library (**csv**, **datetime**, **collections**), **Tailwind CSS**, and browser-native **Web Speech API** for AI-powered Tanglish and English voice expense recording. Fully compatible with Python 3.14+ with zero heavy C-dependencies.
 
 ---
 
@@ -26,13 +26,13 @@ A modern, production-grade household expense tracking application built with **F
    - Medical & Healthcare
    - General & Daily Utilities
 
-5. **💾 Robust Data Storage & Pruning**:
-   - Structured CSV persistence in `data/expenses.csv`.
+5. **💾 Pure Python Data Storage & Pruning**:
+   - Structured CSV persistence in `data/expenses.csv` using native `csv.DictReader` and `csv.DictWriter`.
    - Thread-safe file operations with concurrent access locks.
    - Automatic 90-day rolling history with archival to `data/expenses_archive.csv`.
 
 6. **📥 Export & Offline Backup**:
-   - One-click export to **CSV** and styled **Excel (.xlsx)** via OpenPyXL.
+   - Instant direct download of `expenses.csv` via Flask's built-in `send_file`.
 
 7. **🚀 Production Deployment Ready**:
    - Pre-configured `Procfile` for **Gunicorn** and cloud deployment on **Render**.
