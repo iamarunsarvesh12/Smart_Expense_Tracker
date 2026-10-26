@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Home Expense Tracker · 50:20:20:10 Budget OS</title>
-  <meta name="description" content="Linear & Stripe inspired smart home expense tracker with automated 50:20:20:10 salary budget allocation engine.">
+  <meta name="description" content="Editorial high-density financial workspace with automated 50:20:20:10 salary allocation engine.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -14,17 +14,25 @@
 <body>
   <div class="app-container">
     
-    <!-- TOP MINIMAL NAVBAR -->
+    <!-- TOP MINIMAL EDITORIAL NAVBAR -->
     <header class="top-navbar" id="top-navbar">
       <div class="nav-left">
         <div class="brand-monomark" aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
           </svg>
         </div>
         <div class="brand-info">
-          <span class="brand-title">Smart Home Expense</span>
-          <span class="brand-version">50:20:20:10 Engine</span>
+          <div class="brand-header-row">
+            <span class="brand-title">Smart Home Expense</span>
+            <span class="sync-status-indicator" title="Local file storage synchronized">
+              <span class="sync-dot"></span>
+              <span class="sync-text">50:20:20:10 Rule</span>
+            </span>
+          </div>
+          <span class="brand-version">Automated FinTech Allocation OS</span>
         </div>
       </div>
 
@@ -32,13 +40,13 @@
       <div class="nav-center">
         <div class="month-selector" id="month-selector-group">
           <button class="icon-btn" id="prev-month-btn" title="Previous Month" aria-label="Previous Month">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
           <span class="current-month-label" id="current-month-display">October 2026</span>
           <button class="icon-btn" id="next-month-btn" title="Next Month" aria-label="Next Month">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg>
           </button>
-          <button class="nav-pill-btn" id="today-btn" title="Jump to Current Month">Today</button>
+          <button class="nav-pill-btn" id="today-btn" title="Jump to Current Month">Current</button>
         </div>
       </div>
 
@@ -47,7 +55,7 @@
         <!-- Tanglish Voice Button -->
         <button class="voice-toggle-btn" id="voice-toggle-btn" title="Toggle Tanglish Speech Recognition" aria-label="Voice input">
           <span class="voice-wave-dot"></span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
             <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
             <line x1="12" y1="19" x2="12" y2="23"/>
@@ -57,34 +65,34 @@
         </button>
 
         <!-- Email Report Trigger -->
-        <button class="secondary-btn" id="email-report-btn" title="Dispatch Monthly Report to sarveshsantosh2007s@gmail.com">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button class="secondary-btn" id="email-report-btn" title="Dispatch Monthly Statement to sarveshsantosh2007s@gmail.com">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="2" y="4" width="20" height="16" rx="2"/>
             <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
           </svg>
-          <span class="btn-text">Email Report</span>
+          <span class="btn-text">Statement</span>
         </button>
 
         <!-- Settings Dropdown -->
         <div class="dropdown-wrapper">
           <button class="icon-btn" id="settings-menu-btn" title="Settings & Tools" aria-label="Settings" aria-expanded="false">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="3"/>
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
           </button>
           <div class="dropdown-menu" id="settings-dropdown">
             <button class="dropdown-item" id="open-salary-modal-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
               <span>Adjust Salary & Rules</span>
             </button>
             <button class="dropdown-item" id="export-csv-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               <span>Export CSV File</span>
             </button>
             <div class="dropdown-divider"></div>
             <button class="dropdown-item text-danger" id="reset-system-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
               <span>Reset Budget & Data</span>
             </button>
           </div>
@@ -92,22 +100,22 @@
       </div>
     </header>
 
-    <!-- 50:20:20:10 SALARY BUDGET ALLOCATION RIBBON -->
+    <!-- 50:20:20:10 SALARY BUDGET ALLOCATION RIBBON (Editorial High Density) -->
     <section class="budget-ribbon" id="budget-ribbon">
       
       <!-- Pillar 1: Monthly Income -->
       <div class="ribbon-card income-pillar" id="pillar-income-card">
         <div class="pillar-header">
-          <span class="pillar-tag">SALARY</span>
+          <span class="pillar-tag">SALARY BASE</span>
           <button class="mini-edit-btn" id="edit-income-quick-btn" title="Change Monthly Income">Edit</button>
         </div>
         <div class="pillar-value" id="disp-income-val">₹20,000.00</div>
-        <div class="pillar-footer">
-          <span class="sub-label">Net Spent:</span>
-          <span class="sub-val" id="disp-total-spent">₹0.00</span>
-        </div>
         <div class="pillar-hairline-meter">
           <div class="hairline-fill bg-neutral" id="meter-total-outflow" style="width: 0%;"></div>
+        </div>
+        <div class="pillar-footer">
+          <span class="sub-label">Total Outflow:</span>
+          <span class="sub-val" id="disp-total-spent">₹0.00</span>
         </div>
       </div>
 
@@ -166,7 +174,7 @@
           <div class="hairline-fill bg-indigo" id="meter-investments" style="width: 0%;"></div>
         </div>
         <div class="pillar-footer">
-          <span class="sub-label">Funded:</span>
+          <span class="sub-label">Funded Rate:</span>
           <span class="sub-val" id="investments-pct-val">0.0%</span>
         </div>
       </div>
@@ -186,21 +194,21 @@
           <div class="hairline-fill bg-sky" id="meter-emergency" style="width: 0%;"></div>
         </div>
         <div class="pillar-footer">
-          <span class="sub-label" title="Targeting 6 months of baseline needs backup">6-Mo Buffer:</span>
+          <span class="sub-label" title="Targeting 6 months of baseline backup">6-Mo Goal:</span>
           <span class="sub-val" id="emergency-buffer-summary">₹0 / ₹60k</span>
         </div>
       </div>
 
     </section>
 
-    <!-- LIVE TANGLISH SPEECH TICKER (Revealed when listening) -->
+    <!-- LIVE TANGLISH SPEECH TICKER (Revealed on active listening) -->
     <div class="voice-ticker-banner" id="voice-ticker-banner" style="display: none;">
       <div class="voice-ticker-content">
         <div class="voice-wave-anim">
           <span></span><span></span><span></span><span></span><span></span>
         </div>
         <div class="voice-ticker-text">
-          <span class="ticker-label">Listening for Tanglish input...</span>
+          <span class="ticker-label">Listening for voice command...</span>
           <span class="ticker-transcript" id="voice-transcript-text">"Petrol 300 rupees bike UPI"</span>
         </div>
       </div>
@@ -216,7 +224,10 @@
         <!-- Compact Inline Expense Form -->
         <section class="panel-box expense-form-panel">
           <div class="panel-header">
-            <h2 class="panel-title">Log Transaction</h2>
+            <div>
+              <h2 class="panel-title">Record Outflow</h2>
+              <div class="panel-subtitle">Immediate ledger entry</div>
+            </div>
             <div class="form-shortcuts-hint">
               <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
             </div>
@@ -230,7 +241,7 @@
                 <input type="date" id="exp-date" name="date" required>
               </div>
               <div class="form-field">
-                <label for="exp-category">Category</label>
+                <label for="exp-category">Macro Category</label>
                 <select id="exp-category" name="category" required>
                   <optgroup label="Household Needs (50%)">
                     <option value="Groceries" selected>Groceries</option>
@@ -243,7 +254,7 @@
                     <option value="Stationery & Office">Stationery & Office</option>
                     <option value="General & Others">General & Others</option>
                   </optgroup>
-                  <optgroup label="Savings & Safety (30%)">
+                  <optgroup label="Savings & Reserves (30%)">
                     <option value="Investments & SIP">Investments & SIP (20%)</option>
                     <option value="Emergency Fund">Emergency Fund (10%)</option>
                   </optgroup>
@@ -255,7 +266,7 @@
             <div class="form-row-2">
               <div class="form-field field-grow">
                 <label for="exp-item">Merchant / Item Description</label>
-                <input type="text" id="exp-item" name="item" placeholder="e.g., Nilgiris Supermarket, Petrol..." required>
+                <input type="text" id="exp-item" name="item" placeholder="e.g. Supermarket, Petrol, Swiggy..." required>
               </div>
               <div class="form-field field-amount">
                 <label for="exp-amount">Amount (₹)</label>
@@ -277,22 +288,22 @@
               </div>
               <div class="form-field">
                 <label for="exp-notes">Notes (Optional)</label>
-                <input type="text" id="exp-notes" name="notes" placeholder="e.g., Split with friend, receipt #">
+                <input type="text" id="exp-notes" name="notes" placeholder="e.g. Monthly bill, split">
               </div>
             </div>
 
             <!-- Form Action Bar -->
             <div class="form-actions">
               <button type="button" class="btn-ghost-mic" id="voice-form-btn" title="Dictate with Tanglish voice">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
                   <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
                   <line x1="12" y1="19" x2="12" y2="23"/>
                 </svg>
-                <span>Tanglish Voice</span>
+                <span>Tanglish Dictate</span>
               </button>
               <button type="submit" class="primary-btn" id="submit-expense-btn">
-                <span>Record Outflow</span>
+                <span>Save Transaction</span>
                 <span class="btn-kbd">↵</span>
               </button>
             </div>
@@ -303,10 +314,10 @@
         <section class="panel-box calendar-panel">
           <div class="panel-header">
             <div class="calendar-title-group">
-              <h2 class="panel-title">Spending Calendar</h2>
+              <h2 class="panel-title">Spending Matrix</h2>
               <span class="active-filter-pill" id="calendar-active-filter" style="display: none;">
                 <span id="calendar-filter-text">26 Oct</span>
-                <button type="button" class="pill-clear-btn" id="calendar-clear-filter-btn" title="Clear Date Filter">✕</button>
+                <button type="button" class="pill-clear-btn" id="calendar-clear-filter-btn" title="Clear Filter">✕</button>
               </span>
             </div>
             <div class="calendar-legend">
@@ -320,9 +331,7 @@
             <div class="cal-weekdays">
               <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
             </div>
-            <div class="cal-days-grid" id="cal-days-grid">
-              <!-- Dynamically populated via app.js -->
-            </div>
+            <div class="cal-days-grid" id="cal-days-grid"></div>
           </div>
         </section>
 
@@ -335,7 +344,7 @@
         <section class="panel-box chart-panel">
           <div class="panel-header">
             <div>
-              <h2 class="panel-title">50:20:20:10 Allocation vs Actual Spend</h2>
+              <h2 class="panel-title">50:20:20:10 Allocation vs Actual Outflow</h2>
               <div class="panel-subtitle">Desaturated macro analysis comparing current outflow against smart limits</div>
             </div>
             <div class="chart-stats-summary" id="chart-quick-stats">
@@ -366,7 +375,7 @@
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
                 </svg>
-                <input type="text" id="ledger-search-input" placeholder="Search merchant, item..." aria-label="Search ledger">
+                <input type="text" id="ledger-search-input" placeholder="Search transactions..." aria-label="Search ledger">
                 <button class="clear-search-btn" id="clear-search-btn" style="display:none;">✕</button>
               </div>
 
@@ -387,9 +396,7 @@
           </div>
 
           <!-- Transaction Feed Container -->
-          <div class="ledger-feed-wrapper" id="ledger-feed-container">
-            <!-- Grouped transaction rows dynamically injected via app.js -->
-          </div>
+          <div class="ledger-feed-wrapper" id="ledger-feed-container"></div>
         </section>
 
       </section>
@@ -451,10 +458,7 @@
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
 
-  <!-- APPLICATION SCRIPTS -->
-  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-
-  <!-- Compatibility Layer for Phase 4 Automated Test Suites -->
+  <!-- Compatibility Layer for Automated Regression Tests -->
   <div id="modal-voice-confirm" style="display: none;" aria-hidden="true">
     <div id="voice-listening-overlay"></div>
     <div id="voice-live-transcript"></div>
@@ -469,8 +473,6 @@
       <input id="voice-input-amount" type="hidden">
     </form>
   </div>
-
-  <!-- Phase 3 Compatibility Elements for automated test assertion -->
   <div style="display:none;" aria-hidden="true" id="phase3-compat">
     <!-- https://cdn.tailwindcss.com -->
     <div id="chart-category-ranking"></div>
@@ -480,5 +482,7 @@
     <div id="modal-budget-settings"></div>
   </div>
 
+  <!-- APPLICATION SCRIPTS -->
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
