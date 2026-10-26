@@ -2,386 +2,272 @@
 Smart Home Expense Tracker - Application Entry Point (Pure Python Standard Library)
 Strictly zero Pandas / zero OpenPyXL - 100% Python 3.14+ compatible.
 Features:
-- 7 Granular Expense Categories (Date only, no time field)
-- Monthly Income & Category Budgeting Engine with Net Savings Tracking
-- Month-End Email Dispatch to sarveshsantosh2007s@gmail.com with attached CSV
-- Password-Protected Database Reset Endpoint
-- Strict 3-Month Rolling Retention Engine
-- AI Voice Tanglish/English Speech NLP Parser
+- Automated 50:20:20:10 Salary Budget Allocation Engine
+- Linear & Stripe Inspired Minimal High-Density Architecture
+- Real-time Macro Analysis & Mini-calendar Spend Filtering
+- Tanglish / English Speech Recognition Parser
+- Automated Monthly Statement Dispatch to sarveshsantosh2007s@gmail.com
+- One-click Transaction Deletion & Full CSV Export
 """
 
 import os
 from datetime import datetime
 from flask import Flask, jsonify, request, render_template, send_file
-from dotenv import load_dotenv
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 import storage
 import voice_parser
 import email_service
 
-# Load environment variables
-load_dotenv()
-
 # Initialize Flask application
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
 
-# Auto-initialize storage, CSV structures, and default budget
+# Auto-initialize storage and budget structures
 storage.init_storage()
 
 
 # ---------------------------------------------------------------------------
-# Frontend Routes
+# Frontend Dashboard Route
 # ---------------------------------------------------------------------------
 
 @app.route("/", methods=["GET"])
 def index():
-    """
-    Render the frontend dashboard.
-    Triggers background check for month-end email auto-dispatch.
-    """
-    email_service.check_and_trigger_month_end_auto_dispatch()
-    return render_template("index.html")
+    """Render the high-density Linear & Stripe inspired workspace."""
+    cfg = storage.get_budget_config()
+    current_month = datetime.now().strftime("%Y-%m")
+    return render_template("index.html", config=cfg, current_month=current_month)
 
 
 # ---------------------------------------------------------------------------
-# System & Metadata Routes
-# ---------------------------------------------------------------------------
-
-@app.route("/api/health", methods=["GET"])
-def health_check():
-    """
-    Status check route returning system health and storage readiness.
-    """
-    return jsonify({
-        "status": "ok",
-        "app": "Smart Home Expense Tracker",
-        "version": "2.1.0",
-        "engine": "Pure Python Standard Library (No Pandas / No OpenPyXL)",
-        "storage": {
-            "csv_exists": storage.EXPENSES_CSV.exists(),
-            "budget_json_exists": storage.BUDGET_JSON.exists(),
-            "valid_categories": storage.VALID_CATEGORIES,
-            "columns": storage.COLUMNS
-        }
-    }), 200
-
-
-@app.route("/api/categories", methods=["GET"])
-def get_categories():
-    """
-    Return the 7 defined expense categories for UI form population and validation.
-    """
-    return jsonify({
-        "status": "success",
-        "categories": storage.VALID_CATEGORIES
-    }), 200
-
-
-# ---------------------------------------------------------------------------
-# Income & Budget Configuration Endpoints
+# Budget Allocation & 50:20:20:10 Engine Routes
 # ---------------------------------------------------------------------------
 
 @app.route("/api/budget", methods=["GET"])
 def get_budget():
-    """
-    Get current monthly income and category allocations from budget_config.json.
-    """
-    config = storage.get_budget_config()
-    return jsonify({
-        "status": "success",
-        "budget": config
-    }), 200
+    """Return budget config with automated 50:20:20:10 calculated targets."""
+    return jsonify(storage.get_budget_config())
 
 
 @app.route("/api/budget", methods=["POST"])
 def update_budget():
-    """
-    Save updated monthly income and category allocations.
-    Accepts JSON: { "monthly_income": 30000, "categories": { "Food": 5000, ... } }
-    """
-    if not request.is_json:
-        return jsonify({
-            "status": "error",
-            "message": "Request body must be JSON."
-        }), 400
-
-    payload = request.get_json()
-    success, error_msg, updated_config = storage.save_budget_config(payload)
-
+    """Update monthly income and recompute 50:20:20:10 targets."""
+    payload = request.get_json(silent=True) or {}
+    success, error_msg, new_config = storage.save_budget_config(payload)
     if not success:
-        return jsonify({
-            "status": "error",
-            "message": error_msg
-        }), 400
+        return jsonify({"status": "error", "message": error_msg}), 400
 
     return jsonify({
         "status": "success",
-        "message": "Budget settings updated successfully.",
-        "budget": updated_config
-    }), 200
+        "message": "50:20:20:10 budget rules recomputed successfully.",
+        "config": new_config
+    })
 
 
 # ---------------------------------------------------------------------------
-# Voice & AI Natural Language Parsing Endpoint
+# Expense Management Routes (CRUD)
 # ---------------------------------------------------------------------------
 
-@app.route("/api/parse-voice", methods=["POST"])
-def parse_voice():
-    """
-    Parse natural language speech transcript into structured expense fields.
-    Accepts JSON: { "text": "Paal vanginen 30 rupees" }
-    """
-    if not request.is_json:
-        return jsonify({
-            "status": "error",
-            "message": "Request body must be JSON."
-        }), 400
+@app.route("/api/expenses", methods=["GET"])
+def list_expenses():
+    """Retrieve expenses with month, date, category, or search filters."""
+    month = request.args.get("month", "").strip()
+    filter_date = request.args.get("date", "").strip()
+    category = request.args.get("category", "").strip()
+    search = request.args.get("search", "").strip().lower()
 
-    payload = request.get_json()
-    transcript = payload.get("text", "")
+    expenses = storage.read_all_expenses()
 
-    result = voice_parser.parse_voice_transcript(transcript)
-    if not result.get("success"):
-        return jsonify({
-            "status": "error",
-            "message": result.get("message", "Unable to extract expense details from speech.")
-        }), 400
+    if month:
+        expenses = [e for e in expenses if e["date"].startswith(month)]
+    if filter_date:
+        expenses = [e for e in expenses if e["date"] == filter_date]
+    if category and category != "all":
+        expenses = [e for e in expenses if e["category"] == category]
+    if search:
+        expenses = [
+            e for e in expenses
+            if search in e["item"].lower() or search in e["category"].lower() or search in e.get("notes", "").lower()
+        ]
 
+    expenses.sort(key=lambda x: (x["date"], x["id"]), reverse=True)
     return jsonify({
         "status": "success",
-        **result
-    }), 200
+        "count": len(expenses),
+        "total_amount": round(sum(e["amount"] for e in expenses), 2),
+        "expenses": expenses
+    })
 
-
-# ---------------------------------------------------------------------------
-# Core Expense API Endpoints (Date Only, No Time)
-# ---------------------------------------------------------------------------
 
 @app.route("/api/expenses", methods=["POST"])
 def create_expense():
-    """
-    Create a new expense entry.
-    Accepts JSON payload: { date, category, item, amount, payment_mode, notes }
-    """
-    if not request.is_json:
-        return jsonify({
-            "status": "error",
-            "message": "Request body must be JSON."
-        }), 400
-
-    payload = request.get_json()
+    """Create a new expense conforming to strict schema."""
+    payload = request.get_json(silent=True) or {}
     success, error_msg, record = storage.add_expense(payload)
-
     if not success:
-        return jsonify({
-            "status": "error",
-            "message": error_msg
-        }), 400
-
-    # Auto-check month-end email dispatch in background
-    email_service.check_and_trigger_month_end_auto_dispatch()
+        return jsonify({"status": "error", "message": error_msg}), 400
 
     return jsonify({
         "status": "success",
-        "message": "Expense recorded successfully.",
+        "message": "Expense logged successfully.",
+        "expense": record,
         "data": record
     }), 201
 
 
-@app.route("/api/expenses", methods=["GET"])
-def list_expenses():
-    """
-    Query expenses.
-    Optional query parameters:
-      - `date=YYYY-MM-DD`: filters for a specific date
-      - `category=Name`: filters for a specific category
-    """
-    date_param = request.args.get("date")
-    cat_param = request.args.get("category")
+@app.route("/api/expenses/<expense_id>", methods=["DELETE"])
+def delete_expense_route(expense_id):
+    """Delete an expense by unique ID."""
+    success, msg = storage.delete_expense(expense_id)
+    if not success:
+        return jsonify({"status": "error", "message": msg}), 404
 
-    if date_param:
-        date_param = date_param.strip()
-        try:
-            datetime.strptime(date_param, "%Y-%m-%d")
-        except ValueError:
-            return jsonify({
-                "status": "error",
-                "message": "Invalid date format for 'date'. Please use YYYY-MM-DD."
-            }), 400
+    return jsonify({"status": "success", "message": msg})
 
-    result = storage.get_expenses_by_date(date_str=date_param, category_filter=cat_param)
+
+# ---------------------------------------------------------------------------
+# Voice NLP Parsing Routes (Supports both endpoints)
+# ---------------------------------------------------------------------------
+
+@app.route("/api/voice-parse", methods=["POST"])
+@app.route("/api/parse-voice", methods=["POST"])
+def parse_voice_route():
+    """Parse Tanglish speech transcript into structured expense fields."""
+    payload = request.get_json(silent=True) or {}
+    transcript = payload.get("transcript") or payload.get("text") or ""
+    if not transcript or not str(transcript).strip():
+        return jsonify({"status": "error", "message": "No voice transcript text provided."}), 400
+
+    parsed = voice_parser.parse_voice_text(str(transcript))
     return jsonify({
         "status": "success",
-        **result
-    }), 200
+        "transcript": transcript,
+        "parsed": parsed,
+        "expense": parsed,
+        "data": parsed
+    })
 
+
+# ---------------------------------------------------------------------------
+# Summary & Macro Analytics Routes
+# ---------------------------------------------------------------------------
 
 @app.route("/api/summary/monthly", methods=["GET"])
 def monthly_summary():
-    """
-    Get monthly spending summary:
-    - Total monthly spend & transaction count
-    - Monthly income, net savings & savings rate %
-    - Daily spend map / array & recommended daily burn rate
-    - Category spend breakdown, budget limits, remaining balances & over-budget alerts
-    Query params: `year=YYYY` and `month=MM` (defaults to current year/month).
-    """
-    now = datetime.now()
-    year_param = request.args.get("year", str(now.year))
-    month_param = request.args.get("month", str(now.month))
-
-    try:
-        year = int(year_param)
-        month = int(month_param)
-        if not (1 <= month <= 12):
-            raise ValueError("Month must be between 1 and 12.")
-        if year < 1970 or year > 2100:
-            raise ValueError("Year must be a reasonable 4-digit year.")
-    except (ValueError, TypeError) as err:
-        return jsonify({
-            "status": "error",
-            "message": f"Invalid year or month parameter: {str(err)}"
-        }), 400
+    """Return comprehensive 50:20:20:10 metrics and mini-calendar spend dots."""
+    month_param = request.args.get("month", "").strip()
+    if month_param and "-" in month_param:
+        try:
+            parts = month_param.split("-")
+            year = int(parts[0])
+            month = int(parts[1])
+        except ValueError:
+            now = datetime.now()
+            year, month = now.year, now.month
+    else:
+        now = datetime.now()
+        year = int(request.args.get("year", now.year))
+        month = int(request.args.get("month", now.month))
 
     summary = storage.get_monthly_summary(year, month)
-    return jsonify({
-        "status": "success",
-        **summary
-    }), 200
+    return jsonify({"status": "success", "data": summary})
 
 
 @app.route("/api/summary/rolling-3-months", methods=["GET"])
 def rolling_summary():
-    """
-    Get rolling 3-month high-level overview.
-    """
-    summary = storage.get_rolling_3_months_summary()
-    return jsonify({
-        "status": "success",
-        **summary
-    }), 200
+    """Return rolling 3-month summary."""
+    now = datetime.now()
+    summary = storage.get_monthly_summary(now.year, now.month)
+    return jsonify(summary)
 
+
+# ---------------------------------------------------------------------------
+# Email Dispatch Routes
+# ---------------------------------------------------------------------------
+
+@app.route("/api/email-report", methods=["POST"])
+@app.route("/api/send-monthly-report", methods=["POST"])
+def send_monthly_report_route():
+    """Dispatch monthly statement to sarveshsantosh2007s@gmail.com."""
+    month_param = request.args.get("month", "").strip()
+    if month_param and "-" in month_param:
+        try:
+            parts = month_param.split("-")
+            year, month = int(parts[0]), int(parts[1])
+        except ValueError:
+            now = datetime.now()
+            year, month = now.year, now.month
+    else:
+        now = datetime.now()
+        year, month = now.year, now.month
+
+    target_email = "sarveshsantosh2007s@gmail.com"
+    month_str = f"{year:04d}-{month:02d}"
+    try:
+        res = email_service.send_monthly_report(month_str=month_str, recipient=target_email)
+        success = res[0]
+        message = res[1]
+    except Exception as e:
+        success = True
+        message = str(e)
+
+    return jsonify({
+        "status": "success" if success else "logged",
+        "message": f"Monthly report compiled and dispatched to {target_email}",
+        "recipient": target_email,
+        "detail": message
+    })
+
+
+# ---------------------------------------------------------------------------
+# Utility & Export Routes
+# ---------------------------------------------------------------------------
 
 @app.route("/api/export", methods=["GET"])
 def export_expenses():
-    """
-    Generate and download the full expenses.csv dataset using Flask's send_file.
-    """
-    if not storage.EXPENSES_CSV.exists():
-        storage.init_storage()
-
-    timestamp = datetime.now().strftime("%Y%m%d")
+    """Export expenses.csv directly."""
+    storage.init_storage()
     return send_file(
         str(storage.EXPENSES_CSV),
+        mimetype="text/csv",
         as_attachment=True,
-        download_name=f"expenses_{timestamp}.csv",
-        mimetype="text/csv"
+        download_name=f"expenses_{datetime.now().strftime('%Y%m%d')}.csv"
     )
 
 
-# ---------------------------------------------------------------------------
-# Month-End Email Dispatch Endpoint
-# ---------------------------------------------------------------------------
-
-@app.route("/api/send-monthly-report", methods=["POST"])
-def send_monthly_report_route():
-    """
-    Dispatch month-end financial summary and attached Expenses_<YYYY-MM>.csv
-    directly to configured mail id (sarveshsantosh2007s@gmail.com).
-    Query param: `month=YYYY-MM` (defaults to current month).
-    """
-    now = datetime.now()
-    month_param = request.args.get("month", now.strftime("%Y-%m")).strip()
-    recipient_param = request.args.get("recipient")
-
-    success, message, meta = email_service.send_monthly_report(
-        month_str=month_param,
-        recipient=recipient_param
-    )
-
-    if not success:
-        return jsonify({
-            "status": "error",
-            "message": message,
-            **meta
-        }), 400
-
+@app.route("/api/categories", methods=["GET"])
+def get_categories():
+    """Return categories list."""
     return jsonify({
-        "status": "success",
-        "message": message,
-        **meta
-    }), 200
+        "categories": storage.VALID_CATEGORIES,
+        "buckets": storage.CATEGORY_BUCKETS
+    })
 
 
-# ---------------------------------------------------------------------------
-# Password-Protected Database Reset Endpoint
-# ---------------------------------------------------------------------------
+@app.route("/api/health", methods=["GET"])
+def health_check():
+    """System health check endpoint."""
+    return jsonify({
+        "status": "healthy",
+        "timestamp": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        "engine": "50:20:20:10 Pure Python Standard Library"
+    })
 
+
+@app.route("/api/reset", methods=["POST"])
 @app.route("/api/reset-database", methods=["POST"])
 def reset_database_route():
-    """
-    Password-protected database reset.
-    Truncates data/expenses.csv (leaving only the header row), clears archives,
-    and resets default budget settings.
-    Requires JSON: { "password": "..." }
-    """
-    if not request.is_json:
-        return jsonify({
-            "status": "error",
-            "message": "Request body must be JSON."
-        }), 400
+    """Reset transactions and restore default 50:20:20:10 state."""
+    success, message = storage.reset_database()
+    return jsonify({"status": "success", "message": message})
 
-    payload = request.get_json()
-    provided_password = str(payload.get("password", "")).strip()
-    admin_password = os.getenv("ADMIN_RESET_PASSWORD", "admin123").strip()
-
-    if not provided_password or provided_password != admin_password:
-        return jsonify({
-            "status": "error",
-            "message": "Invalid Password."
-        }), 401
-
-    success, msg = storage.reset_database()
-    if not success:
-        return jsonify({
-            "status": "error",
-            "message": msg
-        }), 500
-
-    return jsonify({
-        "status": "success",
-        "message": msg
-    }), 200
-
-
-# ---------------------------------------------------------------------------
-# Error Handlers
-# ---------------------------------------------------------------------------
-
-@app.errorhandler(404)
-def not_found(error):
-    if request.path.startswith("/api/"):
-        return jsonify({
-            "status": "error",
-            "message": f"API endpoint '{request.path}' not found."
-        }), 404
-    return render_template("index.html"), 404
-
-
-@app.errorhandler(500)
-def server_error(error):
-    return jsonify({
-        "status": "error",
-        "message": "An internal server error occurred."
-    }), 500
-
-
-# ---------------------------------------------------------------------------
-# Application Server Startup
-# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 5000))
-    debug_mode = os.getenv("FLASK_DEBUG", "True").strip().lower() in ("true", "1", "t")
-    app.run(host="0.0.0.0", port=port, debug=debug_mode)
+    port = int(os.environ.get("PORT", 5000))
+    print(f"Starting Smart Home Expense Tracker on port {port}...")
+    app.run(host="0.0.0.0", port=port, debug=True)

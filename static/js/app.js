@@ -1,1071 +1,1093 @@
+/* Phase 3 Compatibility */
+const CATEGORY_CONFIG = {};
 /**
- * Smart Home Expense Tracker - Frontend Engine
- * Features:
- * - 7-Category Budgeting & Savings Tracker (Allocated, Spent, Remaining)
- * - Strict Date-Only Expense Management (No time field)
- * - Month-End Email Report Dispatch to sarveshsantosh2007s@gmail.com
- * - Password-Protected Database Reset
- * - Chart.js Spending Analytics (Daily Burn Rate & Category Ranking)
- * - Interactive Monthly Calendar
- * - Browser-Native Web Speech API with Tanglish & English Extraction
+ * Smart Home Expense Tracker - 50:20:20:10 Budget Engine
+ * Linear & Stripe inspired interactive UI/UX architecture.
  */
 
-// Global Configuration for the 7 Granular Expense Buckets
-const CATEGORY_CONFIG = {
-    "Food": {
-        color: "#f59e0b",
-        bgClass: "bg-amber-500",
-        lightBgClass: "bg-amber-50",
-        borderClass: "border-amber-200",
-        textColor: "text-amber-700",
-        icon: "fa-utensils",
-        desc: "Restaurant, Tea, Swiggy"
-    },
-    "Groceries": {
-        color: "#10b981",
-        bgClass: "bg-emerald-500",
-        lightBgClass: "bg-emerald-50",
-        borderClass: "border-emerald-200",
-        textColor: "text-emerald-700",
-        icon: "fa-basket-shopping",
-        desc: "Provisions, Veggies, Milk"
-    },
-    "Bike & Car": {
-        color: "#3b82f6",
-        bgClass: "bg-blue-500",
-        lightBgClass: "bg-blue-50",
-        borderClass: "border-blue-200",
-        textColor: "text-blue-700",
-        icon: "fa-motorcycle",
-        desc: "Petrol, Service, Puncture"
-    },
-    "Bills & Utilities": {
-        color: "#8b5cf6",
-        bgClass: "bg-purple-500",
-        lightBgClass: "bg-purple-50",
-        borderClass: "border-purple-200",
-        textColor: "text-purple-700",
-        icon: "fa-bolt",
-        desc: "EB Bill, Wi-Fi, Recharge"
-    },
-    "Stationery & Office": {
-        color: "#06b6d4",
-        bgClass: "bg-cyan-500",
-        lightBgClass: "bg-cyan-50",
-        borderClass: "border-cyan-200",
-        textColor: "text-cyan-700",
-        icon: "fa-print",
-        desc: "Printout, Xerox, Books"
-    },
-    "Medical & Healthcare": {
-        color: "#ef4444",
-        bgClass: "bg-rose-500",
-        lightBgClass: "bg-rose-50",
-        borderClass: "border-rose-200",
-        textColor: "text-rose-700",
-        icon: "fa-heart-pulse",
-        desc: "Medicines, Consultation"
-    },
-    "General & Others": {
-        color: "#64748b",
-        bgClass: "bg-slate-500",
-        lightBgClass: "bg-slate-50",
-        borderClass: "border-slate-200",
-        textColor: "text-slate-700",
-        icon: "fa-coins",
-        desc: "Lending, Cash, Misc"
-    }
-};
+(function () {
+  'use strict';
 
-const MONTH_NAMES = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-];
+  // Application State
+  const state = {
+    currentMonth: getInitialMonth(), // 'YYYY-MM'
+    selectedDate: null,              // 'YYYY-MM-DD' or null
+    activeCategory: 'all',           // filter category
+    searchQuery: '',                 // search term
+    budgetConfig: null,              // from /api/budget
+    monthlyMetrics: null,            // from /api/summary/monthly
+    chartInstance: null,             // Chart.js instance
+    isListening: false,              // Speech recognition status
+    speechRecognition: null          // Web Speech API
+  };
 
-// Application State
-const state = {
-    currentYear: new Date().getFullYear(),
-    currentMonth: new Date().getMonth() + 1,
-    selectedDate: new Date().toISOString().split("T")[0],
-    categoryFilter: null,
-    monthlySummary: null,
-    budgetConfig: null,
-    chartDaily: null,
-    chartCategoryRanking: null,
-    speechRecognition: null,
-    isListening: false,
-    audioCtx: null
-};
+  function getInitialMonth() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  }
 
-// Utilities
-const formatCurrency = (amount) => "₹" + Number(amount || 0).toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-});
-
-const formatCompactCurrency = (amount) => {
-    const val = Number(amount || 0);
-    if (val >= 1000) return `₹${(val / 1000).toFixed(1)}k`;
-    return `₹${Math.round(val)}`;
-};
-
-const formatDateReadable = (dateStr) => {
-    if (!dateStr) return "";
-    const [y, m, d] = dateStr.split("-").map(Number);
-    const dObj = new Date(y, m - 1, d);
-    return dObj.toLocaleDateString("en-IN", {
-        weekday: "long",
-        day: "numeric",
-        month: "short",
-        year: "numeric"
+  function formatCurrency(val) {
+    const num = parseFloat(val) || 0.0;
+    return '₹' + num.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     });
-};
+  }
 
-function playAudioChime(freq = 600, duration = 0.15) {
-    try {
-        if (!state.audioCtx) {
-            state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (state.audioCtx.state === "suspended") {
-            state.audioCtx.resume();
-        }
-        const osc = state.audioCtx.createOscillator();
-        const gain = state.audioCtx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(freq, state.audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.12, state.audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, state.audioCtx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(state.audioCtx.destination);
-        osc.start();
-        osc.stop(state.audioCtx.currentTime + duration);
-    } catch (e) {
-        // AudioContext fallback
+  function formatShortCurrency(val) {
+    const num = parseFloat(val) || 0.0;
+    if (num >= 100000) {
+      return '₹' + (num / 100000).toFixed(1) + 'L';
     }
-}
+    if (num >= 1000) {
+      return '₹' + (num / 1000).toFixed(1) + 'k';
+    }
+    return '₹' + num.toFixed(0);
+  }
 
-// ---------------------------------------------------------------------------
-// Core Data Fetching
-// ---------------------------------------------------------------------------
+  // ==========================================
+  // INITIALIZATION
+  // ==========================================
+  document.addEventListener('DOMContentLoaded', () => {
+    initDOMReferences();
+    initSpeechRecognition();
+    setupEventListeners();
+    
+    // Set default form date to today
+    const todayStr = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('exp-date');
+    if (dateInput) dateInput.value = todayStr;
 
-async function fetchMonthlySummary() {
+    // Load initial budget and data
+    loadAllData();
+  });
+
+  // DOM Elements Cache
+  const dom = {};
+  function initDOMReferences() {
+    dom.currentMonthDisplay = document.getElementById('current-month-display');
+    dom.prevMonthBtn = document.getElementById('prev-month-btn');
+    dom.nextMonthBtn = document.getElementById('next-month-btn');
+    dom.todayBtn = document.getElementById('today-btn');
+
+    // Ribbon Elements
+    dom.dispIncomeVal = document.getElementById('disp-income-val');
+    dom.dispTotalSpent = document.getElementById('disp-total-spent');
+    dom.meterTotalOutflow = document.getElementById('meter-total-outflow');
+
+    dom.needsSpentVal = document.getElementById('needs-spent-val');
+    dom.needsLimitVal = document.getElementById('needs-limit-val');
+    dom.meterNeeds = document.getElementById('meter-needs');
+    dom.needsRemainingVal = document.getElementById('needs-remaining-val');
+    dom.needsStatusDesc = document.getElementById('needs-status-desc');
+
+    dom.lifestyleSpentVal = document.getElementById('lifestyle-spent-val');
+    dom.lifestyleLimitVal = document.getElementById('lifestyle-limit-val');
+    dom.meterLifestyle = document.getElementById('meter-lifestyle');
+    dom.lifestyleRemainingVal = document.getElementById('lifestyle-remaining-val');
+    dom.lifestyleStatusDesc = document.getElementById('lifestyle-status-desc');
+
+    dom.investmentsAllocatedVal = document.getElementById('investments-allocated-val');
+    dom.investmentsTargetVal = document.getElementById('investments-target-val');
+    dom.meterInvestments = document.getElementById('meter-investments');
+    dom.investmentsPctVal = document.getElementById('investments-pct-val');
+    dom.investmentsStatusBadge = document.getElementById('investments-status-badge');
+
+    dom.emergencyAllocatedVal = document.getElementById('emergency-allocated-val');
+    dom.emergencyTargetVal = document.getElementById('emergency-target-val');
+    dom.meterEmergency = document.getElementById('meter-emergency');
+    dom.emergencyBufferSummary = document.getElementById('emergency-buffer-summary');
+    dom.emergencyStatusBadge = document.getElementById('emergency-status-badge');
+
+    // Form
+    dom.expenseForm = document.getElementById('expense-form');
+    dom.expDate = document.getElementById('exp-date');
+    dom.expCategory = document.getElementById('exp-category');
+    dom.expItem = document.getElementById('exp-item');
+    dom.expAmount = document.getElementById('exp-amount');
+    dom.expPaymentMode = document.getElementById('exp-payment-mode');
+    dom.expNotes = document.getElementById('exp-notes');
+
+    // Calendar
+    dom.calDaysGrid = document.getElementById('cal-days-grid');
+    dom.calendarActiveFilter = document.getElementById('calendar-active-filter');
+    dom.calendarFilterText = document.getElementById('calendar-filter-text');
+    dom.calendarClearFilterBtn = document.getElementById('calendar-clear-filter-btn');
+
+    // Ledger
+    dom.ledgerFeedContainer = document.getElementById('ledger-feed-container');
+    dom.ledgerCountBadge = document.getElementById('ledger-count-badge');
+    dom.ledgerSearchInput = document.getElementById('ledger-search-input');
+    dom.clearSearchBtn = document.getElementById('clear-search-btn');
+    dom.ledgerCategoryFilter = document.getElementById('ledger-category-filter');
+
+    // Chart & Stats
+    dom.chartCanvas = document.getElementById('macro-budget-chart');
+    dom.chipNeedsSpent = document.getElementById('chip-needs-spent');
+    dom.chipLifestyleSpent = document.getElementById('chip-lifestyle-spent');
+    dom.chipInvestSpent = document.getElementById('chip-invest-spent');
+    dom.chipEmergencySpent = document.getElementById('chip-emergency-spent');
+
+    // Voice Elements
+    dom.voiceToggleBtn = document.getElementById('voice-toggle-btn');
+    dom.voiceFormBtn = document.getElementById('voice-form-btn');
+    dom.voiceTickerBanner = document.getElementById('voice-ticker-banner');
+    dom.voiceTranscriptText = document.getElementById('voice-transcript-text');
+    dom.voiceStopBtn = document.getElementById('voice-stop-btn');
+
+    // Nav Actions & Settings Dropdown
+    dom.settingsMenuBtn = document.getElementById('settings-menu-btn');
+    dom.settingsDropdown = document.getElementById('settings-dropdown');
+    dom.openSalaryModalBtn = document.getElementById('open-salary-modal-btn');
+    dom.editIncomeQuickBtn = document.getElementById('edit-income-quick-btn');
+    dom.exportCsvBtn = document.getElementById('export-csv-btn');
+    dom.resetSystemBtn = document.getElementById('reset-system-btn');
+    dom.emailReportBtn = document.getElementById('email-report-btn');
+
+    // Salary Modal
+    dom.salaryModal = document.getElementById('salary-modal');
+    dom.closeSalaryModalBtn = document.getElementById('close-salary-modal-btn');
+    dom.cancelSalaryModalBtn = document.getElementById('cancel-salary-modal-btn');
+    dom.salaryConfigForm = document.getElementById('salary-config-form');
+    dom.modalSalaryInput = document.getElementById('modal-salary-input');
+    dom.modalEmergencyAccumulated = document.getElementById('modal-emergency-accumulated');
+    dom.prevNeedsTarget = document.getElementById('prev-needs-target');
+    dom.prevLifeTarget = document.getElementById('prev-life-target');
+    dom.prevInvTarget = document.getElementById('prev-inv-target');
+    dom.prevEmgTarget = document.getElementById('prev-emg-target');
+
+    // Toast Container
+    dom.toastStack = document.getElementById('toast-stack');
+  }
+
+  // ==========================================
+  // DATA FETCHING & SYNCHRONIZATION
+  // ==========================================
+  async function loadAllData() {
+    updateMonthDisplay();
     try {
-        const res = await fetch(`/api/summary/monthly?year=${state.currentYear}&month=${state.currentMonth}`);
-        const data = await res.json();
-        if (data.status === "success") {
-            state.monthlySummary = data;
-            renderTopStatCards(data);
-            renderCategoryBudgetCards(data.category_budgets || {});
-            renderCalendar(data.daily_totals || []);
-            renderEnhancedCharts(data);
-        }
+      // 1. Fetch Budget Config
+      const budgetRes = await fetch('/api/budget');
+      if (budgetRes.ok) {
+        state.budgetConfig = await budgetRes.json();
+      }
+
+      // 2. Fetch Monthly Summary & Metrics
+      const summaryRes = await fetch(`/api/summary/monthly?month=${state.currentMonth}`);
+      if (summaryRes.ok) {
+        const json = await summaryRes.json();
+        state.monthlyMetrics = json.data;
+      }
+
+      // 3. Render all UI modules
+      renderBudgetRibbon();
+      renderMiniCalendar();
+      renderChart();
+      await fetchAndRenderLedger();
+
     } catch (err) {
-        console.error("Error loading monthly summary:", err);
+      console.error('Error loading tracker data:', err);
+      showToast('Error syncing with backend server', 'error');
     }
-}
+  }
 
-async function fetchSelectedExpenses() {
+  // Month Display Formatter (e.g., "October 2026")
+  function updateMonthDisplay() {
+    if (!dom.currentMonthDisplay) return;
+    const [year, month] = state.currentMonth.split('-');
+    const dateObj = new Date(parseInt(year, 10), parseInt(month, 10) - 1, 1);
+    dom.currentMonthDisplay.textContent = dateObj.toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric'
+    });
+  }
+
+  // ==========================================
+  // 50:20:20:10 BUDGET RIBBON RENDERING
+  // ==========================================
+  function renderBudgetRibbon() {
+    const m = state.monthlyMetrics;
+    if (!m) return;
+
+    const pNeeds = m.pillars.needs;
+    const pLife = m.pillars.lifestyle;
+    const pInv = m.pillars.investments;
+    const pEmg = m.pillars.emergency;
+
+    // 1. Total Salary Pillar
+    dom.dispIncomeVal.textContent = formatCurrency(m.income);
+    dom.dispTotalSpent.textContent = formatCurrency(m.total_spent);
+    const totalOutflowPct = Math.min(100, Math.round((m.total_spent / m.income) * 100) || 0);
+    dom.meterTotalOutflow.style.width = `${totalOutflowPct}%`;
+
+    // 2. 50% Household Needs Pillar
+    dom.needsSpentVal.textContent = formatCurrency(pNeeds.spent);
+    dom.needsLimitVal.textContent = formatCurrency(pNeeds.limit);
+    dom.meterNeeds.style.width = `${Math.min(100, pNeeds.pct_used)}%`;
+    setHairlineColor(dom.meterNeeds, pNeeds.status);
+
+    if (pNeeds.remaining >= 0) {
+      dom.needsStatusDesc.textContent = 'Remaining:';
+      dom.needsRemainingVal.textContent = `${formatCurrency(pNeeds.remaining)} (${pNeeds.pct_used}%)`;
+    } else {
+      dom.needsStatusDesc.textContent = 'Overspent:';
+      dom.needsRemainingVal.textContent = `+${formatCurrency(Math.abs(pNeeds.remaining))} (${pNeeds.pct_used}%)`;
+    }
+
+    // 3. 20% Lifestyle & Wants Pillar
+    dom.lifestyleSpentVal.textContent = formatCurrency(pLife.spent);
+    dom.lifestyleLimitVal.textContent = formatCurrency(pLife.limit);
+    dom.meterLifestyle.style.width = `${Math.min(100, pLife.pct_used)}%`;
+    setHairlineColor(dom.meterLifestyle, pLife.status);
+
+    if (pLife.remaining >= 0) {
+      dom.lifestyleStatusDesc.textContent = 'Remaining:';
+      dom.lifestyleRemainingVal.textContent = `${formatCurrency(pLife.remaining)} (${pLife.pct_used}%)`;
+    } else {
+      dom.lifestyleStatusDesc.textContent = 'Overspent:';
+      dom.lifestyleRemainingVal.textContent = `+${formatCurrency(Math.abs(pLife.remaining))} (${pLife.pct_used}%)`;
+    }
+
+    // 4. 20% Investments & SIP Pillar
+    dom.investmentsAllocatedVal.textContent = formatCurrency(pInv.allocated);
+    dom.investmentsTargetVal.textContent = formatCurrency(pInv.target);
+    dom.meterInvestments.style.width = `${Math.min(100, pInv.pct_achieved)}%`;
+    dom.investmentsPctVal.textContent = `${pInv.pct_achieved}%`;
+    dom.investmentsStatusBadge.textContent = pInv.pct_achieved >= 100 ? 'Target Met ✓' : `Target ${formatShortCurrency(pInv.target)}`;
+
+    // 5. 10% Emergency Fund Pillar
+    dom.emergencyAllocatedVal.textContent = formatCurrency(pEmg.allocated);
+    dom.emergencyTargetVal.textContent = formatCurrency(pEmg.target);
+    dom.meterEmergency.style.width = `${Math.min(100, pEmg.pct_achieved)}%`;
+    dom.emergencyBufferSummary.textContent = `${formatShortCurrency(pEmg.accumulated_total)} / ${formatShortCurrency(pEmg.goal_6_months)} (${pEmg.goal_progress_pct}%)`;
+    dom.emergencyStatusBadge.textContent = pEmg.pct_achieved >= 100 ? 'Buffer Added ✓' : `Target ${formatShortCurrency(pEmg.target)}`;
+
+    // Quick stats chips
+    dom.chipNeedsSpent.textContent = formatCurrency(pNeeds.spent);
+    dom.chipLifestyleSpent.textContent = formatCurrency(pLife.spent);
+    dom.chipInvestSpent.textContent = formatCurrency(pInv.allocated);
+    dom.chipEmergencySpent.textContent = formatCurrency(pEmg.allocated);
+  }
+
+  function setHairlineColor(meterElem, status) {
+    meterElem.classList.remove('status-normal', 'status-warning', 'status-danger');
+    if (status === 'danger') {
+      meterElem.classList.add('status-danger');
+    } else if (status === 'warning') {
+      meterElem.classList.add('status-warning');
+    } else {
+      meterElem.classList.add('status-normal');
+    }
+  }
+
+  // ==========================================
+  // CHART.JS MACRO COMPARISON BAR CHART
+  // ==========================================
+  function renderChart() {
+    if (!dom.chartCanvas || typeof Chart === 'undefined') return;
+
+    const m = state.monthlyMetrics;
+    if (!m) return;
+
+    const pNeeds = m.pillars.needs;
+    const pLife = m.pillars.lifestyle;
+    const pInv = m.pillars.investments;
+    const pEmg = m.pillars.emergency;
+
+    const labels = [
+      '50% Needs',
+      '20% Lifestyle',
+      '20% Investments',
+      '10% Emergency'
+    ];
+
+    const targetData = [
+      pNeeds.limit,
+      pLife.limit,
+      pInv.target,
+      pEmg.target
+    ];
+
+    const actualData = [
+      pNeeds.spent,
+      pLife.spent,
+      pInv.allocated,
+      pEmg.allocated
+    ];
+
+    // Colors matching Linear palette
+    const actualColors = [
+      pNeeds.status === 'danger' ? '#f43f5e' : (pNeeds.status === 'warning' ? '#f59e0b' : '#10b981'),
+      pLife.status === 'danger' ? '#f43f5e' : (pLife.status === 'warning' ? '#f59e0b' : '#10b981'),
+      '#6366f1',
+      '#0ea5e9'
+    ];
+
+    if (state.chartInstance) {
+      state.chartInstance.data.datasets[0].data = targetData;
+      state.chartInstance.data.datasets[1].data = actualData;
+      state.chartInstance.data.datasets[1].backgroundColor = actualColors;
+      state.chartInstance.update();
+      return;
+    }
+
+    const ctx = dom.chartCanvas.getContext('2d');
+    state.chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Rule Target Limit',
+            data: targetData,
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            borderColor: 'rgba(255, 255, 255, 0.2)',
+            borderWidth: 1,
+            borderRadius: 4,
+            barPercentage: 0.65,
+            categoryPercentage: 0.7
+          },
+          {
+            label: 'Actual Spend / Inflow',
+            data: actualData,
+            backgroundColor: actualColors,
+            borderColor: 'transparent',
+            borderWidth: 0,
+            borderRadius: 4,
+            barPercentage: 0.65,
+            categoryPercentage: 0.7
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            align: 'end',
+            labels: {
+              boxWidth: 10,
+              boxHeight: 10,
+              color: '#9ca3af',
+              font: { family: "'Geist Mono', monospace", size: 10.5 }
+            }
+          },
+          tooltip: {
+            backgroundColor: '#16181b',
+            titleColor: '#ffffff',
+            bodyColor: '#e5e7eb',
+            borderColor: '#26292d',
+            borderWidth: 1,
+            padding: 8,
+            boxPadding: 4,
+            usePointStyle: true,
+            callbacks: {
+              label: function (ctx) {
+                return ` ${ctx.dataset.label}: ₹${ctx.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: '#9ca3af',
+              font: { family: "'Geist', sans-serif", size: 11.5, weight: '500' }
+            }
+          },
+          y: {
+            grid: { color: 'rgba(255, 255, 255, 0.04)' },
+            ticks: {
+              color: '#6b7280',
+              font: { family: "'Geist Mono', monospace", size: 10.5 },
+              callback: function (val) {
+                return '₹' + val.toLocaleString('en-IN');
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ==========================================
+  // MINIMALIST MINI-CALENDAR
+  // ==========================================
+  function renderMiniCalendar() {
+    if (!dom.calDaysGrid) return;
+    dom.calDaysGrid.innerHTML = '';
+
+    const [yearStr, monthStr] = state.currentMonth.split('-');
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10) - 1; // 0-indexed
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const totalDays = lastDay.getDate();
+
+    // Monday is index 0 in our grid (Mo Tu We Th Fr Sa Su)
+    // JS getDay(): 0 is Sunday, 1 is Monday...
+    let startingDayOfWeek = firstDay.getDay() - 1;
+    if (startingDayOfWeek === -1) startingDayOfWeek = 6;
+
+    // Active spend days map
+    const dailySpend = (state.monthlyMetrics && state.monthlyMetrics.daily_spending) || {};
+
+    // Today string
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    // Blank cells before first day
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      const emptyCell = document.createElement('div');
+      emptyCell.className = 'cal-day-cell empty-day';
+      dom.calDaysGrid.appendChild(emptyCell);
+    }
+
+    // Days 1..totalDays
+    for (let day = 1; day <= totalDays; day++) {
+      const dateKey = `${yearStr}-${monthStr}-${String(day).padStart(2, '0')}`;
+      const cell = document.createElement('div');
+      cell.className = 'cal-day-cell';
+      cell.textContent = day;
+      cell.dataset.date = dateKey;
+
+      if (dateKey === todayStr) {
+        cell.classList.add('is-today');
+      }
+
+      if (dateKey === state.selectedDate) {
+        cell.classList.add('is-selected');
+      }
+
+      if (dailySpend[dateKey] !== undefined) {
+        cell.classList.add('has-spend');
+        cell.title = `${dateKey}: Outflow ₹${dailySpend[dateKey].toLocaleString('en-IN')}`;
+      }
+
+      cell.addEventListener('click', () => {
+        handleDateClick(dateKey);
+      });
+
+      dom.calDaysGrid.appendChild(cell);
+    }
+
+    updateCalendarFilterPill();
+  }
+
+  function handleDateClick(dateKey) {
+    if (state.selectedDate === dateKey) {
+      // Toggle off
+      state.selectedDate = null;
+    } else {
+      state.selectedDate = dateKey;
+      // Pre-fill form date
+      if (dom.expDate) dom.expDate.value = dateKey;
+    }
+
+    renderMiniCalendar();
+    fetchAndRenderLedger();
+  }
+
+  function updateCalendarFilterPill() {
+    if (!dom.calendarActiveFilter) return;
+    if (state.selectedDate) {
+      const parts = state.selectedDate.split('-');
+      const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      dom.calendarFilterText.textContent = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+      dom.calendarActiveFilter.style.display = 'inline-flex';
+    } else {
+      dom.calendarActiveFilter.style.display = 'none';
+    }
+  }
+
+  // ==========================================
+  // TRANSACTION FEED / LEDGER
+  // ==========================================
+  async function fetchAndRenderLedger() {
+    if (!dom.ledgerFeedContainer) return;
+
+    let url = `/api/expenses?month=${state.currentMonth}`;
+    if (state.selectedDate) {
+      url += `&date=${state.selectedDate}`;
+    }
+    if (state.activeCategory && state.activeCategory !== 'all') {
+      url += `&category=${encodeURIComponent(state.activeCategory)}`;
+    }
+    if (state.searchQuery) {
+      url += `&search=${encodeURIComponent(state.searchQuery)}`;
+    }
+
     try {
-        let url = `/api/expenses?`;
-        if (state.categoryFilter) {
-            url += `category=${encodeURIComponent(state.categoryFilter)}`;
-        } else if (state.selectedDate) {
-            url += `date=${encodeURIComponent(state.selectedDate)}`;
-        }
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch expenses');
+      const data = await res.json();
+      const expenses = data.expenses || [];
 
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data.status === "success") {
-            renderExpensesList(data.expenses || [], data.daily_total || 0, data.count || 0);
-        }
-    } catch (err) {
-        console.error("Error fetching filtered expenses:", err);
-    }
-}
+      // Update counter badge
+      dom.ledgerCountBadge.textContent = `${expenses.length} transaction${expenses.length === 1 ? '' : 's'}`;
 
-// ---------------------------------------------------------------------------
-// Render Dashboard Cards & Progress Meters
-// ---------------------------------------------------------------------------
-
-function renderTopStatCards(summary) {
-    const monthBadge = document.getElementById("current-month-badge");
-    if (monthBadge) {
-        monthBadge.textContent = `${MONTH_NAMES[state.currentMonth - 1].slice(0, 3)} ${state.currentYear}`;
-    }
-
-    // 1. Total Spend
-    document.getElementById("stat-month-total").textContent = formatCurrency(summary.total_spending);
-    document.getElementById("stat-month-transactions").textContent = `${summary.transaction_count} transactions`;
-
-    // 2. Monthly Income & Allocation
-    const income = summary.monthly_income || 0;
-    document.getElementById("stat-monthly-income").textContent = formatCurrency(income);
-    document.getElementById("stat-budget-allocated").textContent = formatCurrency(summary.total_budget_allocated || 0);
-
-    // 3. Net Savings & Meter
-    const netSavings = summary.net_savings ?? (income - summary.total_spending);
-    const savingsEl = document.getElementById("stat-net-savings");
-    savingsEl.textContent = formatCurrency(netSavings);
-
-    const savingsRate = summary.savings_rate ?? (income > 0 ? (netSavings / income) * 100 : 0);
-    const savingsRateBadge = document.getElementById("stat-savings-rate-badge");
-    const savingsBar = document.getElementById("stat-savings-bar");
-
-    if (netSavings >= 0) {
-        savingsEl.className = "text-2xl font-bold tracking-tight text-emerald-600 tabular-nums";
-        savingsRateBadge.className = "text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80";
-        savingsRateBadge.textContent = `${Math.max(0, savingsRate).toFixed(1)}% Saved`;
-        savingsBar.className = "bg-emerald-500 h-full rounded-full transition-all duration-500";
-        savingsBar.style.width = `${Math.min(100, Math.max(0, savingsRate))}%`;
-    } else {
-        savingsEl.className = "text-2xl font-bold tracking-tight text-rose-600 tabular-nums";
-        savingsRateBadge.className = "text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200/80";
-        savingsRateBadge.textContent = `Overspent by ${formatCurrency(Math.abs(netSavings))}`;
-        savingsBar.className = "bg-rose-500 h-full rounded-full transition-all duration-500";
-        savingsBar.style.width = "100%";
-    }
-
-    // 4. Daily Burn Rate vs Target
-    const todayStr = new Date().toISOString().split("T")[0];
-    const todayEntry = (summary.daily_totals || []).find(d => d.date === todayStr);
-    const todaySpent = todayEntry ? todayEntry.total : 0;
-    const dailyTarget = summary.daily_budget_target || (income / (summary.days_in_month || 30));
-
-    document.getElementById("stat-today-total").textContent = formatCurrency(todaySpent);
-    document.getElementById("stat-daily-target").textContent = `${formatCurrency(dailyTarget)} / day`;
-
-    const dailyBadge = document.getElementById("stat-daily-status-badge");
-    if (todaySpent > dailyTarget && dailyTarget > 0) {
-        dailyBadge.className = "text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200";
-        dailyBadge.textContent = "Over Target";
-    } else {
-        dailyBadge.className = "text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200";
-        dailyBadge.textContent = "Within Target";
-    }
-}
-
-function renderCategoryBudgetCards(categoryBudgets) {
-    const container = document.getElementById("category-cards-container");
-    container.innerHTML = "";
-
-    const categories = Object.keys(CATEGORY_CONFIG);
-
-    categories.forEach(catName => {
-        const cfg = CATEGORY_CONFIG[catName];
-        const data = categoryBudgets[catName] || { spent: 0, allocated: 0, remaining: 0, pct_used: 0, is_over: false };
-
-        const card = document.createElement("div");
-        const isActive = state.categoryFilter === catName;
-        card.className = `category-card bg-white rounded-xl border p-3 shadow-2xs hover:shadow-xs transition-all cursor-pointer relative overflow-hidden ${
-            isActive ? "border-neutral-900 ring-1 ring-neutral-900 bg-neutral-50/60" : "border-black/[0.07] hover:border-black/20"
-        }`;
-
-        let progressColor = "bg-neutral-900";
-        let statusBadge = "";
-        if (data.is_over) {
-            progressColor = "bg-rose-500";
-            statusBadge = `<span class="text-[9px] font-bold text-rose-600 uppercase tracking-wider">Over</span>`;
-        } else if (data.pct_used >= 75) {
-            progressColor = "bg-amber-500";
-        }
-
-        const cappedPct = Math.min(100, Math.max(0, data.pct_used));
-
-        card.innerHTML = `
-            <div class="flex items-center justify-between mb-2">
-                <div class="h-6 w-6 rounded-md bg-neutral-100 text-neutral-700 flex items-center justify-center text-[11px]">
-                    <i class="fa-solid ${cfg.icon}"></i>
-                </div>
-                ${statusBadge}
+      if (expenses.length === 0) {
+        dom.ledgerFeedContainer.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <line x1="2" y1="10" x2="22" y2="10"/>
+              </svg>
             </div>
-            <div class="space-y-0.5">
-                <h4 class="text-xs font-bold text-neutral-900 truncate tracking-tight">${catName}</h4>
-                <div class="text-[11px] text-neutral-400 font-medium truncate tabular-nums">
-                    Bud: ${formatCompactCurrency(data.allocated)}
-                </div>
+            <div>No transactions found</div>
+            <div style="font-size: 11px; margin-top: 4px; color: var(--text-subtle);">
+              ${state.selectedDate ? 'No spend recorded on selected date.' : 'Log an expense or use voice dictation to get started.'}
             </div>
-            <div class="mt-2.5 flex items-baseline justify-between">
-                <span class="text-sm font-bold text-neutral-950 tabular-nums">${formatCurrency(data.spent)}</span>
-                <span class="text-[10px] tabular-nums ${data.remaining < 0 ? 'text-rose-600 font-semibold' : 'text-neutral-500'}">
-                    ${data.remaining >= 0 ? `${formatCompactCurrency(data.remaining)} left` : `-${formatCompactCurrency(Math.abs(data.remaining))}`}
-                </span>
-            </div>
-            <div class="w-full bg-neutral-100 h-1 rounded-full mt-2 overflow-hidden">
-                <div class="${progressColor} h-full rounded-full transition-all duration-300" style="width: ${cappedPct}%"></div>
-            </div>
-            <div class="mt-1.5 flex items-center justify-between text-[10px] text-neutral-400">
-                <span class="tabular-nums">${data.pct_used.toFixed(0)}% used</span>
-                <span class="text-neutral-700 font-semibold hover:underline">${isActive ? 'Active' : 'Filter →'}</span>
-            </div>
+          </div>
         `;
-
-        card.addEventListener("click", () => {
-            if (state.categoryFilter === catName) {
-                clearCategoryFilter();
-            } else {
-                setCategoryFilter(catName);
-            }
-        });
-
-        container.appendChild(card);
-    });
-}
-
-// ---------------------------------------------------------------------------
-// Enhanced Chart.js Spending Analytics
-// ---------------------------------------------------------------------------
-
-function renderEnhancedCharts(summary) {
-    const dailyTotals = summary.daily_totals || [];
-    const daysInMonth = summary.days_in_month || 31;
-    const dailyBurnTarget = summary.daily_budget_target || 0;
-
-    // 1. Interactive Daily Spend vs Recommended Burn Rate Line
-    const dailyLabels = [];
-    const dailyValues = [];
-    const dailyTargetLine = [];
-
-    const dateMap = {};
-    dailyTotals.forEach(d => { dateMap[d.date] = d.total; });
-
-    for (let day = 1; day <= daysInMonth; day++) {
-        dailyLabels.push(day);
-        const dayStr = `${state.currentYear}-${String(state.currentMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        dailyValues.push(dateMap[dayStr] || 0);
-        dailyTargetLine.push(dailyBurnTarget);
-    }
-
-    const ctxDaily = document.getElementById("chart-daily-bars");
-    if (ctxDaily) {
-        if (state.chartDaily) state.chartDaily.destroy();
-
-        state.chartDaily = new Chart(ctxDaily.getContext("2d"), {
-            type: "bar",
-            data: {
-                labels: dailyLabels,
-                datasets: [
-                    {
-                        label: "Daily Spend",
-                        data: dailyValues,
-                        backgroundColor: "#18181b",
-                        hoverBackgroundColor: "#27272a",
-                        borderRadius: 3,
-                        barPercentage: 0.6,
-                        order: 2
-                    },
-                    {
-                        type: "line",
-                        label: "Daily Target Burn Rate",
-                        data: dailyTargetLine,
-                        borderColor: "#e11d48",
-                        borderWidth: 1.5,
-                        borderDash: [3, 3],
-                        pointRadius: 0,
-                        fill: false,
-                        order: 1
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: "index", intersect: false },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: "#18181b",
-                        titleColor: "#ffffff",
-                        bodyColor: "#f4f4f5",
-                        borderColor: "rgba(255,255,255,0.1)",
-                        borderWidth: 1,
-                        padding: 8,
-                        cornerRadius: 8,
-                        titleFont: { size: 11, weight: "bold" },
-                        bodyFont: { size: 11 },
-                        callbacks: {
-                            title: (items) => `${items[0].label} ${summary.month_label || ""}`,
-                            label: (ctx) => ` ${ctx.dataset.label}: ${formatCurrency(ctx.parsed.y)}`
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: { font: { size: 10 }, color: "#a1a1aa", maxTicksLimit: 16 }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: (val) => `₹${val}`,
-                            font: { size: 10 },
-                            color: "#a1a1aa"
-                        },
-                        grid: { color: "rgba(0, 0, 0, 0.04)" }
-                    }
-                }
-            }
-        });
-    }
-
-    // 2. Category Breakdown Chart Sorted Descending by Spend
-    const catBreakdown = summary.category_breakdown || {};
-    const sortedCategories = Object.keys(catBreakdown)
-        .map(cat => ({ category: cat, total: catBreakdown[cat] }))
-        .sort((a, b) => b.total - a.total);
-
-    const rankingLabels = sortedCategories.map(c => c.category);
-    const rankingData = sortedCategories.map(c => c.total);
-    const rankingColors = sortedCategories.map(c => (CATEGORY_CONFIG[c.category] ? CATEGORY_CONFIG[c.category].color : "#18181b"));
-
-    const ctxRanking = document.getElementById("chart-category-ranking");
-    if (ctxRanking) {
-        if (state.chartCategoryRanking) state.chartCategoryRanking.destroy();
-
-        state.chartCategoryRanking = new Chart(ctxRanking.getContext("2d"), {
-            type: "bar",
-            data: {
-                labels: rankingLabels,
-                datasets: [{
-                    label: "Spend",
-                    data: rankingData,
-                    backgroundColor: rankingColors,
-                    borderRadius: 3,
-                    barThickness: 14
-                }]
-            },
-            options: {
-                indexAxis: "y",
-                responsive: true,
-                maintainAspectRatio: false,
-                onClick: (evt, elements) => {
-                    if (elements && elements.length > 0) {
-                        const index = elements[0].index;
-                        const selectedCategory = rankingLabels[index];
-                        setCategoryFilter(selectedCategory);
-                    }
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: "#18181b",
-                        titleColor: "#ffffff",
-                        bodyColor: "#f4f4f5",
-                        borderColor: "rgba(255,255,255,0.1)",
-                        borderWidth: 1,
-                        padding: 8,
-                        cornerRadius: 8,
-                        titleFont: { size: 11, weight: "bold" },
-                        bodyFont: { size: 11 },
-                        callbacks: {
-                            label: (ctx) => ` Spend: ${formatCurrency(ctx.parsed.x)}`
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: (val) => `₹${val}`,
-                            font: { size: 10 },
-                            color: "#a1a1aa"
-                        },
-                        grid: { color: "rgba(0, 0, 0, 0.04)" }
-                    },
-                    y: {
-                        ticks: { font: { size: 10, weight: "600" }, color: "#52525b" },
-                        grid: { display: false }
-                    }
-                }
-            }
-        });
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Filtering & List Display (Date Only, No Time)
-// ---------------------------------------------------------------------------
-
-function setCategoryFilter(category) {
-    state.categoryFilter = category;
-    document.getElementById("category-filter-badge").classList.remove("hidden");
-    document.getElementById("category-filter-name").textContent = category;
-    document.getElementById("btn-clear-category-filter").classList.remove("hidden");
-    document.getElementById("panel-badge-title").textContent = "Filtered Category";
-    document.getElementById("selected-date-title").textContent = `Category: ${category}`;
-
-    renderCategoryBudgetCards(state.monthlySummary ? state.monthlySummary.category_budgets || {} : {});
-    fetchSelectedExpenses();
-}
-
-function clearCategoryFilter() {
-    state.categoryFilter = null;
-    document.getElementById("category-filter-badge").classList.add("hidden");
-    document.getElementById("btn-clear-category-filter").classList.add("hidden");
-    document.getElementById("panel-badge-title").textContent = "Selected Date";
-    document.getElementById("selected-date-title").textContent = formatDateReadable(state.selectedDate);
-
-    renderCategoryBudgetCards(state.monthlySummary ? state.monthlySummary.category_budgets || {} : {});
-    fetchSelectedExpenses();
-}
-
-function renderExpensesList(expenses, total, count) {
-    const listEl = document.getElementById("daily-expenses-list");
-    const emptyEl = document.getElementById("daily-empty-state");
-    const totalEl = document.getElementById("selected-date-total");
-    const countEl = document.getElementById("selected-date-count");
-
-    totalEl.textContent = formatCurrency(total);
-    countEl.textContent = `(${count} item${count === 1 ? "" : "s"})`;
-
-    if (!expenses || expenses.length === 0) {
-        listEl.innerHTML = "";
-        emptyEl.classList.remove("hidden");
         return;
-    }
+      }
 
-    emptyEl.classList.add("hidden");
-    listEl.innerHTML = expenses.map(item => {
-        const catCfg = CATEGORY_CONFIG[item.category] || CATEGORY_CONFIG["General & Others"];
-        return `
-            <div class="group py-2.5 px-3 rounded-lg hover:bg-neutral-50/80 border border-transparent hover:border-black/[0.05] transition-all flex items-center justify-between">
-                <div class="flex items-center space-x-3 min-w-0">
-                    <div class="h-7 w-7 rounded-md bg-neutral-100 text-neutral-700 flex items-center justify-center text-xs shrink-0">
-                        <i class="fa-solid ${catCfg.icon}"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <div class="flex items-center space-x-2">
-                            <h4 class="text-xs font-semibold text-neutral-900 truncate">${item.item}</h4>
-                            <span class="text-[10px] text-neutral-300">•</span>
-                            <span class="text-[10px] text-neutral-500 font-medium">${item.category}</span>
-                        </div>
-                        <div class="flex items-center space-x-2 text-[10px] text-neutral-400 mt-0.5">
-                            <span class="font-mono">${item.date}</span>
-                            <span>•</span>
-                            <span class="inline-flex items-center px-1.5 py-0.2 rounded bg-neutral-100 text-neutral-600 font-medium">
-                                ${item.payment_mode || "UPI"}
-                            </span>
-                            ${item.notes ? `<span>•</span><span class="truncate max-w-[140px] italic">${item.notes}</span>` : ""}
-                        </div>
-                    </div>
-                </div>
-                <div class="text-right shrink-0 ml-3">
-                    <span class="text-xs sm:text-sm font-bold text-neutral-950 tabular-nums">${formatCurrency(item.amount)}</span>
-                </div>
-            </div>
-        `;
-    }).join("");
-}
-
-// ---------------------------------------------------------------------------
-// Interactive Calendar Grid
-// ---------------------------------------------------------------------------
-
-function renderCalendar(dailyTotals) {
-    const calendarGrid = document.getElementById("calendar-grid");
-    const calendarTitle = document.getElementById("calendar-title");
-    calendarGrid.innerHTML = "";
-
-    calendarTitle.textContent = `${MONTH_NAMES[state.currentMonth - 1]} ${state.currentYear}`;
-
-    const dateSpendMap = {};
-    dailyTotals.forEach(d => { dateSpendMap[d.date] = d.total; });
-
-    const firstDayIndex = new Date(state.currentYear, state.currentMonth - 1, 1).getDay();
-    const daysInMonth = new Date(state.currentYear, state.currentMonth, 0).getDate();
-
-    for (let i = 0; i < firstDayIndex; i++) {
-        const blank = document.createElement("div");
-        blank.className = "h-11 sm:h-12 rounded-lg bg-neutral-50/40 border border-transparent";
-        calendarGrid.appendChild(blank);
-    }
-
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${state.currentYear}-${String(state.currentMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        const hasSpend = Boolean(dateSpendMap[dateStr]);
-        const isSelected = state.selectedDate === dateStr && !state.categoryFilter;
-
-        const tile = document.createElement("button");
-        tile.type = "button";
-        tile.className = `calendar-tile h-11 sm:h-12 rounded-lg border p-1 sm:p-1.5 flex flex-col justify-between text-left transition-all ${
-            isSelected
-                ? "border-neutral-900 bg-neutral-100/80 shadow-2xs"
-                : hasSpend
-                ? "border-emerald-200/90 bg-white hover:border-black/20"
-                : "border-black/[0.05] bg-white hover:bg-neutral-50"
-        }`;
-
-        tile.innerHTML = `
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold ${isSelected ? 'text-neutral-950' : 'text-neutral-600'}">${day}</span>
-                ${hasSpend ? '<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>' : ''}
-            </div>
-            <div class="text-right">
-                ${hasSpend ? `<span class="text-[10px] font-bold text-emerald-600 block tabular-nums">${formatCompactCurrency(dateSpendMap[dateStr])}</span>` : '<span class="text-[9px] text-neutral-300">-</span>'}
-            </div>
-        `;
-
-        tile.addEventListener("click", () => {
-            state.selectedDate = dateStr;
-            clearCategoryFilter();
-            renderCalendar(dailyTotals);
-        });
-
-        calendarGrid.appendChild(tile);
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Budget Settings Modal
-// ---------------------------------------------------------------------------
-
-async function openBudgetModal() {
-    try {
-        const res = await fetch("/api/budget");
-        const data = await res.json();
-        const budget = data.budget || {};
-        state.budgetConfig = budget;
-
-        document.getElementById("input-monthly-income").value = budget.monthly_income || 25000;
-
-        const catContainer = document.getElementById("budget-category-inputs-container");
-        catContainer.innerHTML = "";
-
-        const cats = Object.keys(CATEGORY_CONFIG);
-        cats.forEach(cat => {
-            const cfg = CATEGORY_CONFIG[cat];
-            const currentVal = (budget.categories && budget.categories[cat]) ? budget.categories[cat] : 0;
-
-            const row = document.createElement("div");
-            row.className = "flex items-center justify-between text-xs";
-            row.innerHTML = `
-                <div class="flex items-center space-x-2">
-                    <span class="h-2 w-2 rounded-full" style="background-color: ${cfg.color}"></span>
-                    <span class="font-medium text-slate-700">${cat}</span>
-                </div>
-                <div class="w-32">
-                    <input type="number" step="100" min="0" data-category="${cat}" value="${currentVal}"
-                        class="budget-cat-input w-full px-2.5 py-1 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500 font-semibold text-right">
-                </div>
-            `;
-            catContainer.appendChild(row);
-        });
-
-        updateBudgetBufferCalculator();
-
-        document.querySelectorAll(".budget-cat-input, #input-monthly-income").forEach(inp => {
-            inp.addEventListener("input", updateBudgetBufferCalculator);
-        });
-
-        document.getElementById("modal-budget-settings").classList.remove("hidden");
-    } catch (e) {
-        console.error("Failed to load budget:", e);
-    }
-}
-
-function updateBudgetBufferCalculator() {
-    const income = parseFloat(document.getElementById("input-monthly-income").value) || 0;
-    let totalAlloc = 0;
-    document.querySelectorAll(".budget-cat-input").forEach(inp => {
-        totalAlloc += parseFloat(inp.value) || 0;
-    });
-
-    const unallocated = income - totalAlloc;
-    document.getElementById("modal-budget-total-allocated").textContent = formatCurrency(totalAlloc);
-
-    const unallocEl = document.getElementById("modal-budget-unallocated");
-    unallocEl.textContent = formatCurrency(unallocated);
-    if (unallocated < 0) {
-        unallocEl.className = "font-bold text-rose-600";
-    } else {
-        unallocEl.className = "font-bold text-emerald-600";
-    }
-}
-
-async function saveBudgetSettings(e) {
-    e.preventDefault();
-    const income = parseFloat(document.getElementById("input-monthly-income").value) || 0;
-    const categories = {};
-
-    document.querySelectorAll(".budget-cat-input").forEach(inp => {
-        const cat = inp.getAttribute("data-category");
-        categories[cat] = parseFloat(inp.value) || 0;
-    });
-
-    try {
-        const res = await fetch("/api/budget", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ monthly_income: income, categories })
-        });
-        const data = await res.json();
-        if (data.status === "success") {
-            playAudioChime(750, 0.2);
-            document.getElementById("modal-budget-settings").classList.add("hidden");
-            fetchMonthlySummary();
-        } else {
-            alert(data.message || "Failed to save budget settings.");
+      // Group expenses by Date
+      const groups = {};
+      for (const exp of expenses) {
+        if (!groups[exp.date]) {
+          groups[exp.date] = [];
         }
+        groups[exp.date].push(exp);
+      }
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+      let html = '';
+      const sortedDates = Object.keys(groups).sort().reverse();
+
+      for (const dateStr of sortedDates) {
+        const items = groups[dateStr];
+        const dayTotal = items.reduce((acc, cur) => acc + cur.amount, 0);
+
+        let dateLabel = dateStr;
+        if (dateStr === todayStr) {
+          dateLabel = 'Today · ' + formatDateLabel(dateStr);
+        } else if (dateStr === yesterdayStr) {
+          dateLabel = 'Yesterday · ' + formatDateLabel(dateStr);
+        } else {
+          dateLabel = formatDateLabel(dateStr);
+        }
+
+        html += `
+          <div class="ledger-date-group">
+            <div class="ledger-date-header">
+              <span>${dateLabel}</span>
+              <span class="date-group-total">${formatCurrency(dayTotal)}</span>
+            </div>
+        `;
+
+        for (const exp of items) {
+          const badgeClass = `badge-${exp.bucket || 'lifestyle'}`;
+          html += `
+            <div class="ledger-row" id="row-${exp.id}">
+              <span class="badge-cat ${badgeClass}">${escapeHtml(exp.category)}</span>
+              <div class="ledger-item-info">
+                <span class="item-name" title="${escapeHtml(exp.item)}">${escapeHtml(exp.item)}</span>
+                ${exp.notes ? `<span class="item-notes" title="${escapeHtml(exp.notes)}">${escapeHtml(exp.notes)}</span>` : ''}
+              </div>
+              <span class="badge-mode">${escapeHtml(exp.payment_mode || 'UPI')}</span>
+              <span class="ledger-amount">${formatCurrency(exp.amount)}</span>
+              <button class="delete-row-btn" data-id="${exp.id}" title="Delete expense" aria-label="Delete ${escapeHtml(exp.item)}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </button>
+            </div>
+          `;
+        }
+
+        html += `</div>`;
+      }
+
+      dom.ledgerFeedContainer.innerHTML = html;
+
+      // Attach Delete Handlers
+      dom.ledgerFeedContainer.querySelectorAll('.delete-row-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const expenseId = btn.dataset.id;
+          handleDeleteExpense(expenseId);
+        });
+      });
+
     } catch (err) {
-        console.error("Error saving budget:", err);
+      console.error('Error rendering ledger:', err);
+      dom.ledgerFeedContainer.innerHTML = `<div class="empty-state">Failed to load transactions</div>`;
     }
-}
+  }
 
-// ---------------------------------------------------------------------------
-// Speech Recognition Flow (Web Speech API)
-// ---------------------------------------------------------------------------
+  function formatDateLabel(dateStr) {
+    const parts = dateStr.split('-');
+    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
 
-function initSpeechRecognition() {
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  async function handleDeleteExpense(expenseId) {
+    if (!confirm('Delete this transaction?')) return;
+
+    try {
+      const res = await fetch(`/api/expenses/${expenseId}`, { method: 'DELETE' });
+      if (res.ok) {
+        showToast('Transaction deleted', 'success');
+        // Refresh all data
+        await loadAllData();
+      } else {
+        showToast('Failed to delete transaction', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Network error while deleting', 'error');
+    }
+  }
+
+  // ==========================================
+  // COMPACT EXPENSE FORM SUBMISSION
+  // ==========================================
+  async function handleExpenseFormSubmit(e) {
+    e.preventDefault();
+
+    const payload = {
+      date: dom.expDate.value,
+      category: dom.expCategory.value,
+      item: dom.expItem.value.trim(),
+      amount: parseFloat(dom.expAmount.value) || 0,
+      payment_mode: dom.expPaymentMode.value,
+      notes: dom.expNotes.value.trim()
+    };
+
+    if (!payload.item) {
+      showToast('Please enter item or merchant name', 'error');
+      dom.expItem.focus();
+      return;
+    }
+
+    if (payload.amount <= 0) {
+      showToast('Amount must be greater than zero', 'error');
+      dom.expAmount.focus();
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        showToast(`Logged ₹${payload.amount.toFixed(2)} for ${payload.item}`, 'success');
+        
+        // Reset form inputs (preserve date)
+        dom.expItem.value = '';
+        dom.expAmount.value = '';
+        dom.expNotes.value = '';
+        dom.expItem.focus();
+
+        // Refresh entire tracker state
+        await loadAllData();
+      } else {
+        const errJson = await res.json();
+        showToast(errJson.message || 'Error recording outflow', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to connect to backend', 'error');
+    }
+  }
+
+  // ==========================================
+  // TANGLISH VOICE RECOGNITION (Web Speech API)
+  // ==========================================
+  function initSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return null;
+    if (!SpeechRecognition) {
+      console.warn('SpeechRecognition API not available in this browser.');
+      return;
+    }
 
-    const recognizer = new SpeechRecognition();
-    recognizer.continuous = false;
-    recognizer.interimResults = true;
-    recognizer.lang = "en-IN";
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-IN'; // Highly tuned for Tanglish accents
 
-    recognizer.onstart = () => {
+      recognition.onstart = () => {
         state.isListening = true;
-        playAudioChime(520, 0.15);
-        document.getElementById("voice-listening-overlay").classList.remove("hidden");
-        document.getElementById("voice-live-transcript").textContent = "Listening... speak now";
-    };
+        updateVoiceUI(true);
+      };
 
-    recognizer.onresult = (event) => {
-        let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            transcript += event.results[i][0].transcript;
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
         }
-        document.getElementById("voice-live-transcript").textContent = transcript;
-    };
-
-    recognizer.onerror = (event) => {
-        state.isListening = false;
-        document.getElementById("voice-listening-overlay").classList.add("hidden");
-    };
-
-    recognizer.onend = () => {
-        state.isListening = false;
-        const text = document.getElementById("voice-live-transcript").textContent.trim();
-        document.getElementById("voice-listening-overlay").classList.add("hidden");
-        if (text && !text.startsWith("Listening...")) {
-            processVoiceTranscript(text);
+        if (dom.voiceTranscriptText) {
+          dom.voiceTranscriptText.textContent = `"${transcript}"`;
         }
-    };
 
-    return recognizer;
-}
+        // Final result received
+        if (event.results[0].isFinal) {
+          processVoiceTranscript(transcript);
+        }
+      };
 
-function startVoiceRecognition() {
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        state.isListening = false;
+        updateVoiceUI(false);
+        showToast(`Voice error: ${event.error}`, 'warning');
+      };
+
+      recognition.onend = () => {
+        state.isListening = false;
+        updateVoiceUI(false);
+      };
+
+      state.speechRecognition = recognition;
+    } catch (err) {
+      console.warn('Could not initialize SpeechRecognition:', err);
+    }
+  }
+
+  function toggleVoiceRecognition() {
     if (!state.speechRecognition) {
-        state.speechRecognition = initSpeechRecognition();
+      // Simulate/mock prompt for environments without native audio hardware
+      const simulatedVoice = prompt(
+        "Tanglish Voice Input Simulation:\nEnter your expense spoken phrase (e.g., 'Iniku petrol 300 rupees bike UPI' or 'Food swiggy 450 card'):",
+        "Petrol 300 rupees bike UPI"
+      );
+      if (simulatedVoice) {
+        processVoiceTranscript(simulatedVoice);
+      }
+      return;
     }
-    if (state.speechRecognition) {
-        try {
-            state.speechRecognition.start();
-        } catch (e) {
-            state.speechRecognition.stop();
-        }
+
+    if (state.isListening) {
+      state.speechRecognition.stop();
+      state.isListening = false;
+      updateVoiceUI(false);
     } else {
-        alert("Speech Recognition is not supported by your browser. Please use Google Chrome or Microsoft Edge.");
+      try {
+        state.speechRecognition.start();
+      } catch (e) {
+        state.speechRecognition.stop();
+      }
     }
-}
+  }
 
-async function processVoiceTranscript(transcript) {
+  function updateVoiceUI(isListening) {
+    if (dom.voiceToggleBtn) {
+      dom.voiceToggleBtn.classList.toggle('is-active', isListening);
+    }
+    if (dom.voiceTickerBanner) {
+      dom.voiceTickerBanner.style.display = isListening ? 'flex' : 'none';
+    }
+  }
+
+  async function processVoiceTranscript(transcript) {
     try {
-        const res = await fetch("/api/parse-voice", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: transcript })
-        });
-        const data = await res.json();
-        if (data.status === "success") {
-            const parsed = data.data;
-            playAudioChime(880, 0.2);
+      showToast('Processing Tanglish voice command...', 'normal');
+      const res = await fetch('/api/voice-parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript })
+      });
 
-            // Populate voice confirmation modal (Date only, no time)
-            document.getElementById("voice-original-text").textContent = `"${data.transcript || transcript}"`;
-            document.getElementById("voice-input-item").value = parsed.item || "";
-            document.getElementById("voice-input-amount").value = parsed.amount || "";
-            document.getElementById("voice-input-date").value = parsed.date || new Date().toISOString().split("T")[0];
-            document.getElementById("voice-input-category").value = parsed.category || "Food";
-            document.getElementById("voice-input-payment-mode").value = parsed.payment_mode || "UPI";
+      if (!res.ok) throw new Error('Voice parsing failed');
+      const data = await res.json();
+      const parsed = data.parsed;
 
-            document.getElementById("modal-voice-confirm").classList.remove("hidden");
-        } else {
-            alert(data.message || "Could not parse voice command. Please try again.");
-        }
+      // Populate form fields
+      if (dom.expDate && parsed.date) dom.expDate.value = parsed.date;
+      if (dom.expCategory && parsed.category) dom.expCategory.value = parsed.category;
+      if (dom.expItem && parsed.item) dom.expItem.value = parsed.item;
+      if (dom.expAmount && parsed.amount) dom.expAmount.value = parsed.amount;
+      if (dom.expPaymentMode && parsed.payment_mode) dom.expPaymentMode.value = parsed.payment_mode;
+      if (dom.expNotes && parsed.notes) dom.expNotes.value = parsed.notes;
+
+      // Highlight form visually
+      if (dom.expenseForm) {
+        dom.expenseForm.style.transition = 'box-shadow 300ms ease';
+        dom.expenseForm.style.boxShadow = '0 0 12px rgba(99, 102, 241, 0.4)';
+        setTimeout(() => { dom.expenseForm.style.boxShadow = ''; }, 1200);
+      }
+
+      showToast(`Extracted: ${parsed.item} (₹${parsed.amount}) · [${parsed.category}]`, 'success');
+      dom.expAmount.focus();
+
     } catch (err) {
-        console.error("Error processing voice transcript:", err);
+      console.error(err);
+      showToast('Could not parse voice command', 'error');
     }
-}
+  }
 
-// ---------------------------------------------------------------------------
-// Month-End Email Dispatch Flow
-// ---------------------------------------------------------------------------
+  // ==========================================
+  // EMAIL REPORT DISPATCH
+  // ==========================================
+  async function handleEmailReport() {
+    const targetEmail = 'sarveshsantosh2007s@gmail.com';
+    const ok = confirm(`Dispatch monthly financial statement (${state.currentMonth}) to ${targetEmail}?`);
+    if (!ok) return;
 
-function openEmailReportModal() {
-    const monthStr = `${state.currentYear}-${String(state.currentMonth).padStart(2, "0")}`;
-    document.getElementById("email-report-month-label").textContent = `${MONTH_NAMES[state.currentMonth - 1]} ${state.currentYear}`;
-    document.getElementById("email-report-attachment-name").textContent = `Expenses_${monthStr}.csv`;
-
-    const statusBanner = document.getElementById("email-status-banner");
-    statusBanner.className = "hidden p-2.5 rounded-lg text-xs font-semibold";
-    statusBanner.textContent = "";
-
-    document.getElementById("modal-email-report").classList.remove("hidden");
-}
-
-async function handleSendEmailReport() {
-    const monthStr = `${state.currentYear}-${String(state.currentMonth).padStart(2, "0")}`;
-    const btn = document.getElementById("btn-send-email-confirm");
-    const statusBanner = document.getElementById("email-status-banner");
-
-    btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Sending...`;
-
+    showToast(`Compiling and dispatching report to ${targetEmail}...`, 'normal');
     try {
-        const res = await fetch(`/api/send-monthly-report?month=${monthStr}`, {
-            method: "POST"
-        });
-        const data = await res.json();
-
-        if (res.ok && data.status === "success") {
-            playAudioChime(950, 0.25);
-            statusBanner.className = "p-2.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 block";
-            statusBanner.textContent = `✓ ${data.message}`;
-            setTimeout(() => {
-                document.getElementById("modal-email-report").classList.add("hidden");
-            }, 2000);
-        } else {
-            statusBanner.className = "p-2.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 block";
-            statusBanner.textContent = `✗ ${data.message || "Failed to dispatch email."}`;
-        }
+      const res = await fetch(`/api/email-report?month=${state.currentMonth}`, { method: 'POST' });
+      if (res.ok) {
+        const json = await res.json();
+        showToast(`Report successfully dispatched to ${targetEmail}`, 'success');
+      } else {
+        showToast('Error sending email report', 'error');
+      }
     } catch (err) {
-        statusBanner.className = "p-2.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 block";
-        statusBanner.textContent = `✗ Network error sending email.`;
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-envelope mr-1.5"></i> Send Report Now`;
+      console.error(err);
+      showToast('Network error while dispatching email', 'error');
     }
-}
+  }
 
-// ---------------------------------------------------------------------------
-// Password-Protected Database Reset Flow
-// ---------------------------------------------------------------------------
+  // ==========================================
+  // SALARY & BUDGET ALLOCATION SETTINGS MODAL
+  // ==========================================
+  function openSalaryModal() {
+    if (!dom.salaryModal) return;
+    const cfg = state.budgetConfig || {};
+    const income = cfg.monthly_income || 20000;
+    dom.modalSalaryInput.value = income;
+    dom.modalEmergencyAccumulated.value = cfg.emergency_fund_accumulated || 36000;
+    updateModalPreviews(income);
+    dom.salaryModal.style.display = 'flex';
+    dom.modalSalaryInput.focus();
+  }
 
-function openResetModal() {
-    document.getElementById("input-admin-password").value = "";
-    const errEl = document.getElementById("reset-error-msg");
-    errEl.classList.add("hidden");
-    errEl.textContent = "";
-    document.getElementById("modal-reset-db").classList.remove("hidden");
-    document.getElementById("input-admin-password").focus();
-}
+  function closeSalaryModal() {
+    if (dom.salaryModal) dom.salaryModal.style.display = 'none';
+  }
 
-async function handleResetDatabase(e) {
+  function updateModalPreviews(incomeVal) {
+    const inc = parseFloat(incomeVal) || 0;
+    dom.prevNeedsTarget.textContent = formatCurrency(inc * 0.50);
+    dom.prevLifeTarget.textContent = formatCurrency(inc * 0.20);
+    dom.prevInvTarget.textContent = formatCurrency(inc * 0.20);
+    dom.prevEmgTarget.textContent = formatCurrency(inc * 0.10);
+  }
+
+  async function handleSalaryFormSubmit(e) {
     e.preventDefault();
-    const password = document.getElementById("input-admin-password").value.trim();
-    const errEl = document.getElementById("reset-error-msg");
-    const btn = document.getElementById("btn-confirm-reset");
-
-    btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Resetting...`;
+    const newIncome = parseFloat(dom.modalSalaryInput.value) || 20000;
+    const accumulated = parseFloat(dom.modalEmergencyAccumulated.value) || 36000;
 
     try {
-        const res = await fetch("/api/reset-database", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ password })
-        });
-        const data = await res.json();
+      const res = await fetch('/api/budget', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          monthly_income: newIncome,
+          emergency_fund_accumulated: accumulated
+        })
+      });
 
-        if (res.ok && data.status === "success") {
-            playAudioChime(400, 0.3);
-            document.getElementById("modal-reset-db").classList.add("hidden");
-            alert("Database successfully reset! All expenses wiped.");
-            fetchMonthlySummary();
-            fetchSelectedExpenses();
-        } else {
-            errEl.textContent = data.message || "Invalid Password.";
-            errEl.classList.remove("hidden");
-        }
+      if (res.ok) {
+        closeSalaryModal();
+        showToast('50:20:20:10 Salary rules recalculated', 'success');
+        await loadAllData();
+      } else {
+        showToast('Failed to update salary config', 'error');
+      }
     } catch (err) {
-        errEl.textContent = "Network error processing reset.";
-        errEl.classList.remove("hidden");
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-trash-can mr-1"></i> Confirm Reset`;
+      console.error(err);
+      showToast('Network error while updating salary', 'error');
     }
-}
+  }
 
-// ---------------------------------------------------------------------------
-// Event Listeners & Bootstrapping
-// ---------------------------------------------------------------------------
+  // ==========================================
+  // EVENT LISTENERS BINDING
+  // ==========================================
+  function setupEventListeners() {
+    // Month Stepper
+    dom.prevMonthBtn.addEventListener('click', () => {
+      shiftMonth(-1);
+    });
 
-document.addEventListener("DOMContentLoaded", () => {
-    // Top month navigation
-    document.getElementById("btn-prev-month").addEventListener("click", () => {
-        state.currentMonth--;
-        if (state.currentMonth < 1) {
-            state.currentMonth = 12;
-            state.currentYear--;
+    dom.nextMonthBtn.addEventListener('click', () => {
+      shiftMonth(1);
+    });
+
+    dom.todayBtn.addEventListener('click', () => {
+      state.currentMonth = getInitialMonth();
+      state.selectedDate = null;
+      loadAllData();
+    });
+
+    // Form
+    dom.expenseForm.addEventListener('submit', handleExpenseFormSubmit);
+
+    // Keyboard Shortcuts (Ctrl + Enter to submit form)
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        if (document.activeElement && dom.expenseForm.contains(document.activeElement)) {
+          e.preventDefault();
+          dom.expenseForm.requestSubmit();
         }
-        fetchMonthlySummary();
-        fetchSelectedExpenses();
+      }
+      if (e.key === 'Escape') {
+        closeSalaryModal();
+        closeSettingsDropdown();
+      }
     });
-
-    document.getElementById("btn-next-month").addEventListener("click", () => {
-        state.currentMonth++;
-        if (state.currentMonth > 12) {
-            state.currentMonth = 1;
-            state.currentYear++;
-        }
-        fetchMonthlySummary();
-        fetchSelectedExpenses();
-    });
-
-    document.getElementById("btn-current-month").addEventListener("click", () => {
-        const now = new Date();
-        state.currentYear = now.getFullYear();
-        state.currentMonth = now.getMonth() + 1;
-        state.selectedDate = now.toISOString().split("T")[0];
-        clearCategoryFilter();
-        fetchMonthlySummary();
-        fetchSelectedExpenses();
-    });
-
-    // Budget Planner modal triggers
-    document.getElementById("btn-open-budget-modal").addEventListener("click", openBudgetModal);
-    document.getElementById("btn-close-budget-modal").addEventListener("click", () => {
-        document.getElementById("modal-budget-settings").classList.add("hidden");
-    });
-    document.getElementById("btn-cancel-budget-modal").addEventListener("click", () => {
-        document.getElementById("modal-budget-settings").classList.add("hidden");
-    });
-    document.getElementById("form-budget-settings").addEventListener("submit", saveBudgetSettings);
-
-    // Email Report Modal triggers
-    document.getElementById("btn-email-report").addEventListener("click", openEmailReportModal);
-    document.getElementById("btn-close-email-modal").addEventListener("click", () => {
-        document.getElementById("modal-email-report").classList.add("hidden");
-    });
-    document.getElementById("btn-cancel-email").addEventListener("click", () => {
-        document.getElementById("modal-email-report").classList.add("hidden");
-    });
-    document.getElementById("btn-send-email-confirm").addEventListener("click", handleSendEmailReport);
-
-    // Reset Database Modal triggers
-    document.getElementById("btn-open-reset-modal").addEventListener("click", openResetModal);
-    document.getElementById("btn-close-reset-modal").addEventListener("click", () => {
-        document.getElementById("modal-reset-db").classList.add("hidden");
-    });
-    document.getElementById("btn-cancel-reset").addEventListener("click", () => {
-        document.getElementById("modal-reset-db").classList.add("hidden");
-    });
-    document.getElementById("form-reset-db").addEventListener("submit", handleResetDatabase);
 
     // Voice triggers
-    document.getElementById("btn-voice-header").addEventListener("click", startVoiceRecognition);
-    document.getElementById("btn-voice-fab").addEventListener("click", startVoiceRecognition);
-    document.getElementById("btn-stop-voice").addEventListener("click", () => {
-        if (state.speechRecognition) state.speechRecognition.stop();
-    });
-    document.getElementById("btn-cancel-voice").addEventListener("click", () => {
-        if (state.speechRecognition) state.speechRecognition.abort();
-        document.getElementById("voice-listening-overlay").classList.add("hidden");
+    dom.voiceToggleBtn.addEventListener('click', toggleVoiceRecognition);
+    dom.voiceFormBtn.addEventListener('click', toggleVoiceRecognition);
+    dom.voiceStopBtn.addEventListener('click', () => {
+      if (state.speechRecognition) state.speechRecognition.stop();
+      state.isListening = false;
+      updateVoiceUI(false);
     });
 
-    // Voice confirmation modal triggers (Date Only, No Time)
-    document.getElementById("btn-close-voice-confirm").addEventListener("click", () => {
-        document.getElementById("modal-voice-confirm").classList.add("hidden");
-    });
-    document.getElementById("btn-cancel-voice-confirm").addEventListener("click", () => {
-        document.getElementById("modal-voice-confirm").classList.add("hidden");
-    });
-    document.getElementById("form-voice-confirm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const payload = {
-            item: document.getElementById("voice-input-item").value.trim(),
-            amount: parseFloat(document.getElementById("voice-input-amount").value),
-            date: document.getElementById("voice-input-date").value,
-            category: document.getElementById("voice-input-category").value,
-            payment_mode: document.getElementById("voice-input-payment-mode").value,
-            notes: `Voice input: ${document.getElementById("voice-original-text").textContent}`
-        };
+    // Email Report
+    dom.emailReportBtn.addEventListener('click', handleEmailReport);
 
-        const res = await fetch("/api/expenses", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (data.status === "success") {
-            playAudioChime(950, 0.2);
-            document.getElementById("modal-voice-confirm").classList.add("hidden");
-            fetchMonthlySummary();
-            fetchSelectedExpenses();
-        } else {
-            alert(data.message || "Failed to commit expense.");
+    // Clear calendar filter
+    dom.calendarClearFilterBtn.addEventListener('click', () => {
+      state.selectedDate = null;
+      renderMiniCalendar();
+      fetchAndRenderLedger();
+    });
+
+    // Ledger Search & Filters
+    dom.ledgerSearchInput.addEventListener('input', (e) => {
+      state.searchQuery = e.target.value.trim();
+      dom.clearSearchBtn.style.display = state.searchQuery ? 'block' : 'none';
+      debounce(fetchAndRenderLedger, 250)();
+    });
+
+    dom.clearSearchBtn.addEventListener('click', () => {
+      dom.ledgerSearchInput.value = '';
+      state.searchQuery = '';
+      dom.clearSearchBtn.style.display = 'none';
+      fetchAndRenderLedger();
+    });
+
+    dom.ledgerCategoryFilter.addEventListener('change', (e) => {
+      state.activeCategory = e.target.value;
+      fetchAndRenderLedger();
+    });
+
+    // Settings Dropdown
+    dom.settingsMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dom.settingsDropdown.classList.toggle('show');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!dom.settingsDropdown.contains(e.target) && e.target !== dom.settingsMenuBtn) {
+        closeSettingsDropdown();
+      }
+    });
+
+    // Salary Modal Triggers
+    dom.openSalaryModalBtn.addEventListener('click', () => {
+      closeSettingsDropdown();
+      openSalaryModal();
+    });
+
+    dom.editIncomeQuickBtn.addEventListener('click', openSalaryModal);
+    dom.closeSalaryModalBtn.addEventListener('click', closeSalaryModal);
+    dom.cancelSalaryModalBtn.addEventListener('click', closeSalaryModal);
+    dom.salaryConfigForm.addEventListener('submit', handleSalaryFormSubmit);
+
+    dom.modalSalaryInput.addEventListener('input', (e) => {
+      updateModalPreviews(e.target.value);
+    });
+
+    // Export CSV
+    dom.exportCsvBtn.addEventListener('click', () => {
+      closeSettingsDropdown();
+      window.location.href = '/api/export';
+    });
+
+    // Reset System Data
+    dom.resetSystemBtn.addEventListener('click', async () => {
+      closeSettingsDropdown();
+      if (!confirm('Warning: This will reset budget rules to default and clear transaction records. Proceed?')) {
+        return;
+      }
+      try {
+        const res = await fetch('/api/reset', { method: 'POST' });
+        if (res.ok) {
+          showToast('System reset to default', 'warning');
+          await loadAllData();
         }
+      } catch (err) {
+        console.error(err);
+      }
     });
+  }
 
-    // Manual Add Expense modal triggers (Date Only, No Time)
-    document.getElementById("btn-open-add-modal").addEventListener("click", () => {
-        document.getElementById("input-date").value = state.selectedDate || new Date().toISOString().split("T")[0];
-        document.getElementById("modal-add-expense").classList.remove("hidden");
-    });
-    document.getElementById("btn-add-for-selected-date").addEventListener("click", () => {
-        document.getElementById("input-date").value = state.selectedDate || new Date().toISOString().split("T")[0];
-        document.getElementById("modal-add-expense").classList.remove("hidden");
-    });
-    document.getElementById("btn-close-add-modal").addEventListener("click", () => {
-        document.getElementById("modal-add-expense").classList.add("hidden");
-    });
-    document.getElementById("btn-cancel-add-modal").addEventListener("click", () => {
-        document.getElementById("modal-add-expense").classList.add("hidden");
-    });
-    document.getElementById("form-add-expense").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const payload = {
-            item: document.getElementById("input-item").value.trim(),
-            amount: parseFloat(document.getElementById("input-amount").value),
-            date: document.getElementById("input-date").value,
-            category: document.getElementById("input-category").value,
-            payment_mode: document.getElementById("input-payment-mode").value,
-            notes: document.getElementById("input-notes").value.trim()
-        };
+  function closeSettingsDropdown() {
+    if (dom.settingsDropdown) dom.settingsDropdown.classList.remove('show');
+  }
 
-        const res = await fetch("/api/expenses", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (data.status === "success") {
-            playAudioChime(950, 0.2);
-            document.getElementById("modal-add-expense").classList.add("hidden");
-            document.getElementById("form-add-expense").reset();
-            fetchMonthlySummary();
-            fetchSelectedExpenses();
-        } else {
-            alert(data.message || "Failed to save expense.");
-        }
-    });
+  function shiftMonth(delta) {
+    const [year, month] = state.currentMonth.split('-').map(Number);
+    const date = new Date(year, month - 1 + delta, 1);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    state.currentMonth = `${y}-${m}`;
+    state.selectedDate = null; // Reset single day selection
+    loadAllData();
+  }
 
-    // Clear filter button
-    document.getElementById("btn-clear-category-filter").addEventListener("click", clearCategoryFilter);
+  // ==========================================
+  // TOAST NOTIFICATIONS
+  // ==========================================
+  function showToast(message, type = 'normal') {
+    if (!dom.toastStack) return;
 
-    // Export dropdown
-    const exportBtn = document.getElementById("btn-export-menu");
-    const exportMenu = document.getElementById("export-menu");
-    exportBtn.addEventListener("click", () => exportMenu.classList.toggle("hidden"));
-    document.addEventListener("click", (e) => {
-        if (!document.getElementById("export-dropdown-wrapper").contains(e.target)) {
-            exportMenu.classList.add("hidden");
-        }
-    });
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
 
-    // Initial Load
-    fetchMonthlySummary();
-    fetchSelectedExpenses();
-});
+    dom.toastStack.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.transition = 'opacity 200ms ease, transform 200ms ease';
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(10px)';
+      setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 200);
+    }, 3200);
+  }
+
+  // Debounce helper
+  function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+  }
+
+})();

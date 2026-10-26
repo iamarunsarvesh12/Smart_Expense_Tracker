@@ -1,12 +1,42 @@
 {
-  "monthly_income": 25000.0,
+  "monthly_income": 20000.0,
+  "currency": "\u20b9",
+  "emergency_fund_accumulated": 36000.0,
+  "emergency_target_months": 6,
+  "rule_split": {
+    "needs_pct": 50.0,
+    "lifestyle_pct": 20.0,
+    "investments_pct": 20.0,
+    "emergency_pct": 10.0
+  },
+  "calculated_targets": {
+    "needs": 10000.0,
+    "lifestyle": 4000.0,
+    "investments": 4000.0,
+    "emergency": 2000.0,
+    "emergency_goal": 60000.0
+  },
+  "category_mapping": {
+    "Groceries": "needs",
+    "Food": "needs",
+    "Bills & Utilities": "needs",
+    "Medical & Healthcare": "needs",
+    "Bike & Car": "lifestyle",
+    "Stationery & Office": "lifestyle",
+    "General & Others": "lifestyle",
+    "Investments & SIP": "investments",
+    "Emergency Fund": "emergency"
+  },
   "categories": {
-    "Food": 4000.0,
-    "Groceries": 5000.0,
-    "Bike & Car": 3500.0,
-    "Bills & Utilities": 3000.0,
-    "Stationery & Office": 1000.0,
-    "Medical & Healthcare": 2500.0,
-    "General & Others": 2000.0
-  }
+    "Groceries": 3500.0,
+    "Food": 2500.0,
+    "Bills & Utilities": 2500.0,
+    "Medical & Healthcare": 1500.0,
+    "Bike & Car": 2000.0,
+    "Stationery & Office": 500.0,
+    "General & Others": 1500.0,
+    "Investments & SIP": 4000.0,
+    "Emergency Fund": 2000.0
+  },
+  "updated_at": "2026-10-26T21:40:38"
 }

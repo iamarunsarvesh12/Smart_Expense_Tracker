@@ -1,1 +1,21 @@
 id,date,category,item,amount,payment_mode,notes
+exp_1001,2026-10-02,Groceries,Supermarket Provisions,2450.00,UPI,Monthly grocery stock
+exp_1002,2026-10-03,Bills & Utilities,TNEB Electricity Bill,1320.00,UPI,Bi-monthly power bill
+exp_1003,2026-10-05,Investments & SIP,Nifty 50 Index Fund SIP,2000.00,Net Banking,Automated auto-debit
+exp_1004,2026-10-06,Food,Weekend Lunch Hotel,540.00,Cash,Family lunch
+exp_1005,2026-10-08,Bike & Car,Petrol Fuel Refill,500.00,UPI,Bike tank full
+exp_1006,2026-10-10,Emergency Fund,Monthly Buffer Deposit,1000.00,UPI,Emergency reserve
+exp_1007,2026-10-12,Bills & Utilities,Airtel Fiber Broadband,899.00,Credit Card,Home internet
+exp_1008,2026-10-14,Medical & Healthcare,Apollo Pharmacy Medicines,620.00,UPI,Monthly prescription
+exp_1009,2026-10-16,Food,Swiggy Dinner Delivery,380.00,UPI,Late evening food
+exp_1010,2026-10-18,Bike & Car,Bike Service & Engine Oil,750.00,Cash,Routine maintenance
+exp_1011,2026-10-20,Groceries,Fresh Fruits & Vegetables,680.00,UPI,Weekly market produce
+exp_1012,2026-10-22,Stationery & Office,Desk Notebook & Pens,220.00,UPI,Work supplies
+exp_1013,2026-10-24,General & Others,Cinema Tickets,420.00,Credit Card,Weekend screening
+exp_1014,2026-10-25,Investments & SIP,Gold ETF SIP,1000.00,UPI,Monthly gold SIP
+exp_1015,2026-10-26,Groceries,Dairy Milk & Bread,210.00,UPI,Daily essentials
+exp_1016,2026-10-26,Bike & Car,Petrol Bunk Refill,300.00,UPI,City commute
+exp_1793030868110,2026-10-26,Bike & Car,Petrol Card,500.00,UPI,"Voice logged: ""Petrol 500 potten card"""
+exp_1793030900049,2026-10-26,Bike & Car,Petrol Card,500.00,UPI,"Voice logged: ""Petrol 500 potten card"""
+exp_1793030954915,2026-10-26,Bike & Car,Petrol Card,500.00,UPI,"Voice logged: ""Petrol 500 potten card"""
+exp_1793031038174,2026-10-26,Bike & Car,Petrol Card,500.00,UPI,"Voice logged: ""Petrol 500 potten card"""

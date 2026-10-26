@@ -1,157 +1,127 @@
-# Smart Home Expense Tracker 🎙️📊💰✉️
+# Smart Home Expense Tracker · 50:20:20:10 Budget OS
 
-A modern, production-grade household expense & monthly budget tracking application built with **Flask**, Python's native standard library (**csv**, **json**, **datetime**, **smtplib**, **collections**), **Tailwind CSS**, and browser-native **Web Speech API** for AI-powered Tanglish and English voice expense recording. Fully compatible with Python 3.14+ with zero heavy C-dependencies (strictly **no Pandas** and **no OpenPyXL**).
+A high-density, minimal household financial workspace and automated monthly budgeting engine inspired by **Linear and Stripe UI/UX principles**. Built with **Flask** and Python standard libraries only (**csv**, **json**, **datetime**, **smtplib**, **collections**), browser-native **Web Speech API** for Tanglish & English voice logging, and **Chart.js**.
 
----
-
-## 🌟 Key Features
-
-1. **🗓️ Date-Only Strict Schema (No Time Field)**:
-   - Clean, lightweight CSV schema in `data/expenses.csv`:
-     ```csv
-     id,date,category,item,amount,payment_mode,notes
-     ```
-   - Standardized ISO `YYYY-MM-DD` date formatting across manual entry, voice parsing, filters, and reports.
-
-2. **✉️ Month-End Email Dispatch**:
-   - Automated dispatch on month-end (last day or 1st day of next month) and manual on-demand trigger via header button.
-   - Strictly configured recipient: `sarveshsantosh2007s@gmail.com`.
-   - Rich HTML financial statement with total spent, monthly income, net savings, and category budget progress.
-   - Automatically generates and attaches an itemized CSV named `Expenses_<YYYY-MM>.csv` (Columns: Date, Category, Item, Amount, Payment Mode, Notes).
-   - Zero external libraries — powered by Python standard `smtplib` and `email.mime`.
-
-3. **🔒 Password-Protected Database Reset**:
-   - Danger zone control in UI header with confirmation security modal.
-   - Validates against `ADMIN_RESET_PASSWORD` configured in `.env` (default: `admin123`).
-   - Returns `401 Unauthorized` on invalid password.
-   - Upon authentication, truncates `data/expenses.csv` to headers only, clears archives, and resets budget defaults.
-
-4. **🔄 Strict 3-Month Rolling Retention Engine**:
-   - Automatically purges historical data older than the current calendar month plus the previous 2 months.
-   - *Example*: On February 1st, records from November or earlier are purged from active storage, maintaining a lean rolling window.
-
-5. **💰 Monthly Income & Category Budgeting Engine**:
-   - **Monthly Budget Settings Modal**: Configure monthly household income (e.g., ₹25,000) and allocate custom spending limits across all 7 categories.
-   - **Category Progress Bars**: Real-time visualization of Allocated Budget, Amount Spent, and Remaining Balance. Progress meters dynamically shift color (<75% Emerald, 75–90% Amber, >90% Rose/Over-budget).
-   - **Net Monthly Savings Tracker**: Prominently displays `Total Income - Total Spent This Month = Net Savings` alongside a percentage savings rate meter.
-   - **Recommended Daily Burn Rate**: Compares daily spending trends against the month's recommended daily burn rate (`Income / days_in_month`).
-   - Persisted to `data/budget_config.json`.
-
-6. **🗂️ 7 Granular Category Architecture**:
-   - **Food**: Restaurants, Tea, Snacks, Swiggy / Zomato, Outside food.
-   - **Groceries**: Provisions, Vegetables, Milk / Paal, Supermarket items.
-   - **Bike & Car**: Petrol, Diesel, Vehicle Service, Mechanics, Punctures, Toll.
-   - **Bills & Utilities**: EB / Electricity bill, Wi-Fi / Broadband, Mobile Recharge, Gas cylinder.
-   - **Stationery & Office**: Printouts, Xerox, Books, Pens, Courier, Office supplies.
-   - **Medical & Healthcare**: Medicines, Doctor consultation, Medical tests, Tablets.
-   - **General & Others**: Money given to others, Lending, Casual cash spends, Miscellaneous.
-
-7. **🎙️ AI Voice Assistant & Tanglish NLP Parser**:
-   - Browser-native speech recognition (`en-IN` / `ta-IN`) for conversational expense entry.
-   - Smart entity extraction for amounts, dates (today, yesterday / nethu), payment modes (UPI, Cash, Card), and category matching.
-   - **Safety Confirmation Flow**: Speech is transcribed and presented in an editable confirmation modal before saving.
-
-8. **📊 Enhanced Spending Analytics (Chart.js)**:
-   - **Daily Spend vs. Recommended Burn Rate**: Combined interactive Bar & Line chart showing daily spending against the recommended daily budget target line.
-   - **Category Spend Ranking**: Horizontal bar chart automatically sorted descending by spend amount. Clicking any category bar instantly filters the transaction panel.
+Fully compatible with **Python 3.14+** with strictly **no Pandas** and **no OpenPyXL**.
 
 ---
 
-## 🏗️ Project Architecture
+## 💎 Key Features
 
-```text
-Smart_Expense_Tracker/
-├── app.py                 # Flask REST application & routing
-├── storage.py             # Pure Python CSV & JSON storage engine with 3-month retention & reset
-├── email_service.py       # smtplib email dispatch service & CSV attachment generator
-├── voice_parser.py        # 7-Category Voice NLP parser & entity extraction
-├── requirements.txt       # Pinned production dependencies (flask, gunicorn, python-dotenv)
-├── Procfile               # WSGI runner for Render (Gunicorn)
-├── .env.example           # Environment configuration template
-├── .gitignore             # Git ignore rules for venv, secrets, logs, and dispatch markers
-├── data/
-│   ├── expenses.csv       # Active rolling 3-month records (id,date,category,item,amount,payment_mode,notes)
-│   ├── expenses_archive.csv # Historical archived records
-│   └── budget_config.json # Monthly income and category budget limits
-├── static/
-│   ├── css/
-│   │   └── style.css      # Custom animations, wave bars, category styles
-│   └── js/
-│       └── app.js         # Web Speech API, Chart.js & dynamic UI logic
-└── templates/
-    └── index.html         # Tailwind CSS + FontAwesome frontend dashboard
+### 1. Automated 50:20:20:10 Salary Budget Engine
+When the user specifies their Monthly Salary / Income (e.g., ₹20,000 or custom), the engine automatically computes and tracks four macro financial pillars:
+
+1. **Household Needs (50% — Salary × 0.50)**:
+   - *Mapped Categories*: Groceries, Food, Bills & Utilities, Medical & Healthcare.
+   - *Progress Meter*: Dynamic status tracking (Emerald < 75%, Amber 75–90%, Rose > 90%).
+2. **Lifestyle & Wants (20% — Salary × 0.20)**:
+   - *Mapped Categories*: Bike & Car (Transport/Fuel), Stationery & Office, General & Others (Entertainment/Shopping).
+   - *Progress Meter*: Dynamic threshold alerts.
+3. **Monthly Investments & SIP (20% — Salary × 0.20)**:
+   - *Mapped Category*: Investments & SIP.
+   - Dedicated allocation tracker for mutual funds, index SIPs, and wealth creation.
+4. **Emergency Fund (10% — Salary × 0.10)**:
+   - *Mapped Category*: Emergency Fund.
+   - Dedicated contingency buffer tracking towards a **6-month backup goal** (`6 × Needs Limit = ₹60,000`).
+
+Data is persisted in `data/budget_config.json`:
+```json
+{
+  "monthly_income": 20000.0,
+  "currency": "₹",
+  "emergency_fund_accumulated": 36000.0,
+  "emergency_target_months": 6,
+  "rule_split": {
+    "needs_pct": 50,
+    "lifestyle_pct": 20,
+    "investments_pct": 20,
+    "emergency_pct": 10
+  },
+  "calculated_targets": {
+    "needs": 10000.0,
+    "lifestyle": 4000.0,
+    "investments": 4000.0,
+    "emergency": 2000.0,
+    "emergency_goal": 60000.0
+  }
+}
 ```
 
 ---
 
-## 🚀 Getting Started Locally
+### 2. Linear & Stripe Inspired UI/UX Workspace
+Completely refactored into a focused, utilitarian, uncluttered financial interface:
 
-### 1. Clone the Repository
-```bash
-git clone https://github.com/iamarunsarvesh12/Smart_Expense_Tracker.git
-cd Smart_Expense_Tracker
-```
-
-### 2. Configure Environment
-```bash
-cp .env.example .env
-```
-Edit `.env` with your Gmail App Password if you want to enable real email delivery:
-```env
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-EMAIL_USER=sarveshsantosh2007s@gmail.com
-EMAIL_PASS=your_gmail_app_password
-RECIPIENT_EMAIL=sarveshsantosh2007s@gmail.com
-ADMIN_RESET_PASSWORD=admin123
-```
-
-### 3. Run Development Server
-```bash
-python app.py
-```
-Navigate to `http://127.0.0.1:5000` in your browser.
+- **Top Minimal Navbar**:
+  - Brand monomark with `50:20:20:10 Engine` badge.
+  - Interactive month stepper (`← October 2026 →`) with one-click `Today` jump.
+  - "Voice Input" trigger with live audio-wave indicator.
+  - "Email Report" trigger for instant statement dispatch.
+  - "Settings / Reset" dropdown menu (salary config, CSV export, safe reset).
+- **5-Pillar Budget Ribbon**:
+  - Horizontal high-density segmented ribbon displaying `Total Salary`, `50% Needs`, `20% Lifestyle`, `20% Investments`, and `10% Emergency Fund`.
+  - Elegant, thin hairline progress bars with intelligent color coding:
+    - 🟢 **Emerald**: Spending under 75% of limit.
+    - 🟡 **Amber**: Approaching limit (75%–90%).
+    - 🔴 **Rose**: Exceeding allocation threshold (>90%).
+- **Workspace Split-View**:
+  - **Left Column (Input & Calendar)**:
+    - Compact inline expense form (Date, Category, Item description, Amount in ₹, Payment mode, Notes).
+    - Keyboard shortcut support: `Ctrl + Enter` to submit.
+    - Minimalist monthly date picker / mini-calendar with small subtle dots indicating spending days. Clicking a date filters the ledger with an active filter pill.
+    - Sleek Tanglish voice dictation button with animated wave ticker.
+  - **Right Column (Macro Analytics & Ledger)**:
+    - Desaturated Chart.js bar chart comparing **50:20:20:10 Rule Targets vs Actual Spend**.
+    - Minimalist transaction feed grouped by date with category badges and one-click delete.
+    - Real-time search filter and category dropdown selector.
 
 ---
 
-## 🧪 Running Automated Tests
-
-Run the comprehensive test suite verifying pure Python standard library operations, the strict schema (no time), 3-month retention, database reset, and email dispatch:
-
-```bash
-python test_phase2.py
-python test_phase3.py
-python test_phase4.py
-python test_voice.py
+### 3. Date-Only Strict CSV Schema
+Expenses are stored in `data/expenses.csv` conforming to the exact schema:
+```csv
+id,date,category,item,amount,payment_mode,notes
+exp_1001,2026-10-02,Groceries,Supermarket Provisions,2450.00,UPI,Monthly grocery stock
+exp_1002,2026-10-03,Bills & Utilities,TNEB Electricity Bill,1320.00,UPI,Bi-monthly power bill
 ```
 
 ---
 
-## 🌐 API Reference
-
-### System & Health
-- `GET /api/health` - Check service status, schema columns, and storage readiness.
-- `GET /api/categories` - Returns the list of 7 valid category names.
-
-### Monthly Budget & Income
-- `GET /api/budget` - Get current monthly income and category allocations.
-- `POST /api/budget` - Update monthly income and category allocation limits.
-
-### Expenses & Analytics
-- `GET /api/expenses` - Query expenses with optional `date=YYYY-MM-DD` and `category=Name` filters.
-- `POST /api/expenses` - Add a new expense (validates category, amount, item, and date).
-- `GET /api/summary/monthly?year=YYYY&month=MM` - Monthly totals, daily totals array, burn rate, category spent vs. allocated, and net savings.
-- `GET /api/summary/rolling-3-months` - Rolling 90-day aggregate and category distribution.
-- `GET /api/export` - Download `expenses.csv` data.
-
-### Email Dispatch & Admin Controls
-- `POST /api/send-monthly-report?month=YYYY-MM` - Dispatches monthly financial statement and attached CSV to `sarveshsantosh2007s@gmail.com`.
-- `POST /api/reset-database` - Requires `{ "password": "..." }`. Wipes `expenses.csv` to header row and resets configurations.
-
-### AI Voice Assistant
-- `POST /api/parse-voice` - Natural language Tanglish/English parser returning structured fields (`amount`, `category`, `item`, `date`, `payment_mode`).
+### 4. Tanglish & English Voice NLP Assistant
+- Natural speech recognition via browser Web Speech API (`ta-IN` / `en-IN`).
+- Extracts amount, category, item, payment mode, and date from conversational phrases:
+  - *"Iniku petrol 300 rupees bike UPI"* → Bike & Car, ₹300, UPI
+  - *"Supermarket groceries 1200 cash vanginen"* → Groceries, ₹1200, Cash
+  - *"Swiggy food dinner 480 card"* → Food, ₹480, Credit Card
+  - *"TNEB current bill 750 upi"* → Bills & Utilities, ₹750, UPI
+  - *"SIP mutual fund 2500 net banking"* → Investments & SIP, ₹2500, Net Banking
 
 ---
 
-## 📄 License
-MIT License. Open-source household finance management.
+### 5. Email Dispatch Service
+- Dispatches rich monthly financial reports to `sarveshsantosh2007s@gmail.com`.
+- HTML statement summarizing 50:20:20:10 allocations, spent percentages, and itemized CSV report.
+- Standard library `smtplib` implementation with zero external dependencies.
+
+---
+
+## 🚀 Quickstart
+
+1. **Clone & Setup**:
+   ```bash
+   git clone https://github.com/iamarunsarvesh12/Smart_Expense_Tracker.git
+   cd Smart_Expense_Tracker
+   ```
+
+2. **Run Locally**:
+   ```bash
+   python app.py
+   ```
+   Open `http://localhost:5000` in your browser.
+
+3. **Run Automated Test Suite**:
+   ```bash
+   python test_50_20_20_10.py
+   python test_phase4.py
+   python test_voice.py
+   ```
